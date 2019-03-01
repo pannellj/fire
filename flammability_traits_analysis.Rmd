@@ -1,0 +1,95 @@
+---
+title: "Traits and flammability analysis"
+author: "Jennifer Pannell"
+date: "26 February 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read in data 
+Trait data comes from output of traits_lookup.R then tidied by hand
+Burn data supplied by Tim Curran et al (preliminary data)
+
+Note that where species were not found in ecotraits some assumptions were made: 
+_Coprosma dumosa_ traits taken from _Coprosma parviflora_ (used to be a subspecies of _C. parvivlora_)
+_Dodonaea viscosa_ traits taken from various overseas databases and NZ flora
+_Metrosideros_ sp assumed to be _Metrosideros umbellata_
+_Piper excelsum_ known as _Macropiper excelsum_ in traits db 
+_Populus_ sp assumed to be _Populus alba_ as is common and has most trait data
+
+Next, NA values in traits csv were filled in using data from online nurseries and other databases. Some variables that had very 
+little trait data available on Ecotraits, e.g. Number of shoots, were not filled in and will be removed. 
+
+Leaf area estimated as an ellipsoid (pi x (0.5 x length) x (0.5 x width))
+
+```{r traits}
+traits<-read.csv("traits.csv", header=T, na.strings="")
+burn<-read.csv("burn.csv", header=T, na.strings="")
+names(burn)[2]<-"Taxon" #rename the species name column to match traits dataframe
+dat<-merge(burn, traits, by="Taxon",all.x=T)
+rm(burn, traits)
+dat<-droplevels(dat)
+dat$LogLeafArea<-log(dat$LeafArea)
+
+str(dat)
+dat$Vegetative2<-NULL
+```
+
+## Some exploratory plotting
+
+How do flammability traits relate to morphology
+
+```{r exploratory plots, echo=FALSE}
+for (i in 7:ncol(dat)){
+  plot(tIgnite~dat[,i], main=names(dat)[i], data=dat, xlab=names(dat)[i])
+}
+
+for (i in 7:ncol(dat)){
+  plot(MaxTemp~dat[,i], main=names(dat)[i], data=dat, xlab=names(dat)[i])
+}
+
+for (i in 7:ncol(dat)){
+  plot(BurnTime~dat[,i], main=names(dat)[i], data=dat, xlab=names(dat)[i])
+}
+
+for (i in 7:ncol(dat)){
+  plot(BurntBio~dat[,i], main=names(dat)[i], data=dat, xlab=names(dat)[i])
+}
+
+```
+
+```{r correlation structure}
+cor(dat[,c(3:6)])
+# burnt biomass & maximum temperature are the only 2 that correlate strongly (r=0.75)
+cor(dat[,c(11,15,16,22,23)])
+#width, length & area are highly correlated, but not logleafarea
+```
+```{r models of ignition}
+library(nlme)
+
+vars<-names(dat)[7:ncol(dat)]
+pval<-rep(0, length(vars))
+model<-rep("tIgnite", length(vars))
+coefs<-data.frame(model, vars, pval)
+
+for (i in 7:ncol(dat)){
+  var<-dat[,i]
+  tempdat<-data.frame(dat$tIgnite, dat$Taxon, var)
+  colnames(tempdat)<-c("tIgnite", "Taxon", "var")
+  summary(mod<-lme(tIgnite~var, random= ~1|Taxon, data=tempdat))
+  coefs$pval[i-6]<-anova(mod)[2,4]
+  rm(var, tempdat)
+}
+
+# significant vars: Esler, Regeneration, Type
+
+summary(full<-lme(tIgnite~Type+Regeneration, random = ~ 1|Taxon, data=dat))
+
+MuMIn::r.squaredGLMM(full)
+
+# not actually that bad? 0.29 fixed only, 0.70 random + fixed
+```
+

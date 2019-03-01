@@ -1,0 +1,92 @@
+Taxon,Raunkiaer,Esler,Regeneration,Shade,MaxHeight,Spines,Vegetative,Vegetative2,LeafForm,LeafLength,LeafWidth,LeafLongevity,Origin,Native,Woody,Type,LeafArea
+Agathis australis,Phanerophyte,"Woody species, Large trees (> 10m)",Community disturbance,Moderate,60,No,None,None,Broad leaved,80,8,Evergreen,NZ,Native,Woody,Tree,502.6548246
+Aristotelia serrata,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,10,No,None,None,Broad leaved,120,60,Evergreen,NZ,Native,Woody,Tree,5654.866776
+Beilschmiedia tarairi,Phanerophyte,"Woody species, Large trees (> 10m)",Death of individual,Moderate,20,No,None,None,Broad leaved,107,45,Evergreen,NZ,Native,Woody,Tree,3781.692157
+Beilschmiedia tawa,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,High,24,No,None,None,Broad leaved,85,15,Evergreen,NZ,Native,Woody,Tree,1001.382658
+Brachyglottis repanda,Phanerophyte,"Woody species, Small trees (3-6m)",Community disturbance,Low,6,No,None,None,Broad leaved,250,125,Evergreen,NZ,Native,Woody,Tree,24543.69261
+Buddleja davidii,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Community disturbance,Low,4,No,None,None,Broad leaved,140,55,Deciduous,Asia,Exotic,Woody,Tree,6047.565858
+Calystegia tuguriorum,Phanerophyte,"Vines, Stem climbers",Community disturbance,Low,5,No,Rhizomes-corms,None,Broad leaved,60,25,Evergreen,NZ,Native,Herbaceous,Vine,1178.097245
+Carex coriacea,Hemicryptophyte,"Herbaceous perennials, Graminiform-grasslike sedge",Community disturbance,Low,1.2,No,Rhizomes-corms,None,Grass leaved - Flat,200,7,Evergreen,NZ,Native,Herbaceous,Grass,1099.557429
+Carmichaelia australis,Phanerophyte,"Woody species, Medium trees (6-10m)",Community disturbance,Low,10,No,None,None,Phyllodes,22,15,Evergreen,NZ,Native,Woody,Tree,259.1813939
+Carpodetus serratus,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,10,No,None,None,Broad leaved,50,25,Evergreen,NZ,Native,Woody,Tree,981.7477042
+Clematis foetida,Phanerophyte,"Vines, Stem climbers",Community disturbance,Low,6,No,None,None,Broad leaved,70,60,Evergreen,NZ,Native,Woody,Vine,3298.672286
+Clematis paniculata,Phanerophyte,"Vines, Stem climbers",Canopy gap,Low,9,No,None,None,Broad leaved,130,120,Evergreen,NZ,Native,Woody,Vine,12252.21135
+Clematis vitalba,Phanerophyte,"Vines, Tendril climbers",Canopy gap,Moderate,30,No,None,None,Broad leaved,220,120,Deciduous,Europe,Exotic,Woody,Vine,20734.51151
+Coprosma arborea,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,10,No,None,None,Broad leaved,20,14,Evergreen,NZ,Native,Woody,Tree,219.9114858
+Coprosma areolata,Phanerophyte,"Woody species, Small trees (3-6m)",Canopy gap,Moderate,5,No,None,None,Broad leaved,15,8,Evergreen,NZ,Native,Woody,Tree,94.24777961
+Coprosma dumosa,Phanerophyte,"Woody species, Small trees (3-6m)",Canopy gap,Moderate,5,No,None,None,Broad leaved,10,5,Evergreen,NZ,Native,Woody,Tree,39.26990817
+Coprosma grandifolia,Phanerophyte,"Woody species, Small trees (3-6m)",Canopy gap,Moderate,6,No,None,None,Broad leaved,180,70,Evergreen,NZ,Native,Woody,Tree,9896.016859
+Coprosma propinqua,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Community disturbance,Low,6,No,None,None,Broad leaved,12,3,Evergreen,NZ,Native,Woody,Tree,28.27433388
+Coprosma rhamnoides,Phanerophyte,"Woody species, Spreading to erect small shrubs",Canopy gap,Moderate,2,No,None,None,Broad leaved,10,9,Evergreen,NZ,Native,Woody,Shrub,70.68583471
+Coprosma rigida,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Canopy gap,High,5,No,None,None,Broad leaved,15,6,Evergreen,NZ,Native,Woody,Shrub,70.68583471
+Coprosma robusta,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Community disturbance,High,6,No,None,None,Broad leaved,110,35,Evergreen,NZ,Native,Woody,Shrub,3023.782929
+Coprosma rotundifolia,Phanerophyte,"Woody species, Small trees (3-6m)",Canopy gap,Moderate,5,No,None,None,Broad leaved,25,17,Evergreen,NZ,Native,Woody,Tree,333.7942194
+Coprosma spathulata,Phanerophyte,"Woody species, Spreading to erect small shrubs",Canopy gap,Moderate,3,No,None,None,Broad leaved,35,15,Evergreen,NZ,Native,Woody,Shrub,412.3340358
+Coriaria arborea,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Community disturbance,Low,7,No,None,None,Broad leaved,70,45,Evergreen,NZ,Native,Woody,Shrub,2474.004215
+Cordyline australis,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,14,No,Root suckers,Stem fragments,Grass leaved - Flat,650,45,Evergreen,NZ,Native,Woody,Tree,22972.89628
+Corynocarpus laevigatus,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,15,No,None,None,Broad leaved,150,80,Evergreen,NZ,Native,Woody,Tree,9424.777961
+Cyathea dealbata,Phanerophyte,Ferns,Canopy gap,Moderate,10,No,None,None,Broad leaved,4000,850,Evergreen,NZ,Native,Woody,Fern,2670353.756
+Cyathea smithii,Phanerophyte,Ferns,Canopy gap,High,8,No,None,None,Broad leaved,2500,500,Evergreen,NZ,Native,Woody,Fern,981747.7042
+Dacrycarpus dacrydioides,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,60,No,None,None,Broad leaved,5,1,Evergreen,NZ,Native,Woody,Tree,3.926990817
+Dactylis glomerata,Hemicryptophyte,"Herbaceous perennials, Graminiform-grasslike sedge",Community disturbance,Moderate,1.2,No,Rhizomes-corms,None,Grass leaved - Flat,350,5,Evergreen,Europe,Exotic,Herbaceous,Grass,1374.446786
+Discaria toumatou,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Community disturbance,Low,6,Yes,None,None,Broad leaved,15,4,Evergreen,NZ,Native,Woody,Tree,47.1238898
+Dodonaea viscosa,Phanerophyte,"Woody species, Small trees (3-6m)",Community disturbance,Low,10,No,None,None,Broad leaved,100,30,Evergreen,NZ,Native,Woody,Tree,2356.19449
+Elaeocarpus hookerianus,Phanerophyte,"Woody species, Large trees (> 10m)",Death of individual,Moderate,12,No,None,None,Broad leaved,70,20,Evergreen,NZ,Native,Woody,Tree,1099.557429
+Fuchsia excorticata,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,12,No,None,None,Broad leaved,100,30,Semi-evergreen,NZ,Native,Woody,Tree,2356.19449
+Fuchsia perscandens,Phanerophyte,"Woody species, Spreading to erect small shrubs",Community disturbance,Moderate,2,No,None,None,Broad leaved,42,22,Deciduous,NZ,Native,Woody,Shrub,725.707903
+Griselinia littoralis,Phanerophyte,"Woody species, Medium trees (6-10m)",Community disturbance,Moderate,15,No,None,None,Broad leaved,75,35,Evergreen,NZ,Native,Woody,Tree,2061.670179
+Hedycarya arborea,Phanerophyte,"Woody species, Medium trees (6-10m)",Death of individual,Moderate,12,No,None,None,Broad leaved,100,35,Evergreen,NZ,Native,Woody,Tree,2748.893572
+Hoheria angustifolia,Phanerophyte,"Woody species, Medium trees (6-10m)",Community disturbance,Moderate,10,No,None,None,Broad leaved,30,8,Evergreen,NZ,Native,Woody,Tree,188.4955592
+Juncus gregiflorus,Hemicryptophyte,"Herbaceous perennials, Junciform perennials",Community disturbance,Low,2,No,Rhizomes-corms,None,Photosynthetic stems,1500,3,Evergreen,NZ,Native,Herbaceous,Grass,3534.291735
+Knightia excelsa,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Low,30,No,None,None,Broad leaved,140,33,Evergreen,NZ,Native,Woody,Tree,3628.539515
+Leptospermum scoparium,Phanerophyte,"Woody species, Small trees (3-6m)",Community disturbance,Low,8,No,None,None,Broad leaved,8,3,Evergreen,NZ,Native,Woody,Tree,18.84955592
+Leucopogon fasciculatus,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Canopy gap,Moderate,5,No,None,None,Broad leaved,18,3,Evergreen,NZ,Native,Woody,Shrub,42.41150082
+Leycesteria formosa,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Community disturbance,Low,3,No,None,None,Broad leaved,93,50,Evergreen,Asia,Exotic,Woody,Shrub,3652.10146
+Melicytus alpinus,Phanerophyte,"Woody species, Spreading to erect small shrubs",Community disturbance,Low,2,Yes,None,None,Broad leaved,10,4,Evergreen,NZ,Native,Woody,Shrub,31.41592654
+Melicytus ramiflorus,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,12,No,None,None,Broad leaved,120,40,Evergreen,NZ,Native,Woody,Tree,3769.911184
+Melicope simplex,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Canopy gap,Moderate,5,No,None,None,Broad leaved,18,13,Evergreen,NZ,Native,Woody,Tree,183.7831702
+Metrosideros diffusa,Phanerophyte,"Vines, Stem climbers",Canopy gap,Moderate,10,No,Creeping stems,None,Broad leaved,8,6,Evergreen,NZ,Native,Woody,Shrub,37.69911184
+Metrosideros fulgens,Phanerophyte,"Vines, Stem climbers",Death of individual,Moderate,10,No,Creeping stems,None,Broad leaved,45,30,Evergreen,NZ,Native,Woody,Vine,1060.287521
+Metrosideros perforata,Phanerophyte,"Vines, Stem climbers",Death of individual,Moderate,15,No,Creeping stems,None,Broad leaved,9,7,Evergreen,NZ,Native,Woody,Vine,49.48008429
+Metrosideros umbellata,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,15,No,None,None,Broad leaved,45,18,Evergreen,NZ,Native,Woody,Tree,636.1725124
+Muehlenbeckia australis,Phanerophyte,"Vines, Stem climbers",Community disturbance,Low,10,No,None,None,Broad leaved,75,20,Evergreen,NZ,Native,Woody,Vine,1178.097245
+Muehlenbeckia axillaris,Phanerophyte,"Woody species, Prostrate shrubs",Community disturbance,Low,1,No,Creeping stems,None,Broad leaved,6,3,Evergreen,NZ,Native,Woody,Shrub,14.13716694
+Muehlenbeckia complexa,Phanerophyte,"Vines, Stem climbers",Community disturbance,Low,6,No,Creeping stems,None,Broad leaved,13,9,Evergreen,NZ,Native,Woody,Vine,91.89158512
+Myoporum laetum,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,12,No,None,None,Broad leaved,100,50,Evergreen,NZ,Native,Woody,Tree,3926.990817
+Myrsine australis,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,8,No,None,None,Broad leaved,70,20,Evergreen,NZ,Native,Woody,Tree,1099.557429
+Nestegis lanceolata,Phanerophyte,"Woody species, Large trees (> 10m)",Death of individual,Moderate,15,No,None,None,Broad leaved,95,22,Evergreen,NZ,Native,Woody,Tree,1641.482162
+Olearia avicenniifolia,Phanerophyte,"Woody species, Small trees (3-6m)",Community disturbance,Low,6,No,None,None,Broad leaved,75,40,Evergreen,NZ,Native,Woody,Tree,2356.19449
+Olearia paniculata,Phanerophyte,"Woody species, Small trees (3-6m)",Community disturbance,Low,6,No,None,None,Broad leaved,70,30,Evergreen,NZ,Native,Woody,Tree,1649.336143
+Parsonsia heterophylla,Phanerophyte,"Vines, Stem climbers",Community disturbance,Low,10,No,None,None,Broad leaved,60,25,Evergreen,NZ,Native,Woody,Vine,1178.097245
+Passiflora tetrandra,Phanerophyte,"Vines, Tendril climbers",Canopy gap,Low,10,No,None,None,Broad leaved,100,30,Evergreen,NZ,Native,Herbaceous,Vine,2356.19449
+Pennantia corymbosa,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,10,No,None,None,Broad leaved,80,25,Evergreen,NZ,Native,Woody,Tree,1570.796327
+Piper excelsum,Phanerophyte,"Woody species, Small trees (3-6m)",Canopy gap,Moderate,6,No,None,None,Broad leaved,100,90,Evergreen,NZ,Native,Woody,Tree,7068.583471
+Poa cita,Hemicryptophyte,"Herbaceous perennials, Graminiform-grasslike sedge",Community disturbance,Low,1,No,None,None,Grass leaved - Folded,400,2,Evergreen,NZ,Native,Herbaceous,Grass,628.3185307
+Populus alba,Phanerophyte,"Woody species, Large trees (> 10m)",Community disturbance,Low,25,No,Root suckers,None,Broad leaved,97,58,Deciduous,Europe,Exotic,Woody,Tree,4418.650067
+Populus nigra,Phanerophyte,"Woody species, Large trees (> 10m)",Community disturbance,Low,20,No,Root suckers,Stem fragments,Broad leaved,100,65,Deciduous,Europe,Exotic,Woody,Tree,5105.088062
+Phytolacca octandra,Phanerophyte,"Woody species, Spreading to erect small shrubs",Community disturbance,Low,2,No,None,None,Broad leaved,10,40,Semi-evergreen,SAmerica,Exotic,Woody,Shrub,314.1592654
+Phyllocladus trichomanoides,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,20,No,None,None,Broad leaved,20,10,Evergreen,NZ,Native,Woody,Tree,157.0796327
+Pinus radiata,Phanerophyte,"Woody species, Large trees (> 10m)",Community disturbance,Low,40,No,None,None,Needle leaved - 3 Needles,105,2,Evergreen,NAmerica,Exotic,Woody,Tree,164.9336143
+Pittosporum eugenioides,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,12,No,None,None,Broad leaved,90,33,Evergreen,NZ,Native,Woody,Tree,2332.632545
+Pittosporum tenuifolium,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,9,No,None,None,Broad leaved,30,15,Evergreen,NZ,Native,Woody,Tree,353.4291735
+Podocarpus totara,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,30,No,None,None,Broad leaved,22,3,Evergreen,NZ,Native,Woody,Tree,51.83627878
+Prumnopitys taxifolia,Phanerophyte,"Woody species, Large trees (> 10m)",Community disturbance,Low,25,No,None,None,Broad leaved,13,2,Evergreen,NZ,Native,Woody,Tree,20.42035225
+Pseudopanax arboreus,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,Moderate,8,No,None,None,Broad leaved,360,150,Evergreen,NZ,Native,Woody,Tree,42411.50082
+Pseudopanax crassifolius,Phanerophyte,"Woody species, Large trees (> 10m)",Community disturbance,Moderate,15,No,None,None,Broad leaved,150,25,Evergreen,NZ,Native,Woody,Tree,2945.243113
+Pteridium esculentum,Hemicryptophyte,Ferns,Community disturbance,Moderate,4,No,Rhizomes-corms,None,Broad leaved,1700,850,Evergreen,NZ,Native,Herbaceous,Fern,1134900.346
+Rhabdothamnus solandri,Phanerophyte,"Woody species, Spreading to erect small shrubs",Community disturbance,Low,2,No,None,None,Broad leaved,40,30,Evergreen,NZ,Native,Woody,Shrub,942.4777961
+Rhopalostylis sapida,Phanerophyte,"Monocot Trees, Palms",Death of individual,High,15,No,None,None,Broad leaved,3000,1000,Evergreen,NZ,Native,Woody,Tree,2356194.49
+Ripogonum scandens,Phanerophyte,"Vines, Stem climbers",Canopy gap,Moderate,6,No,Rhizomes-corms,None,Broad leaved,110,40,Evergreen,NZ,Native,Herbaceous,Vine,3455.751919
+Rosa rubiginosa,Phanerophyte,"Woody species, Tall shrubs (2.5m-5m)",Community disturbance,Low,5,Yes,Root suckers,None,Broad leaved,28,40,Deciduous,Europe,Exotic,Woody,Shrub,879.645943
+Rubus cissoides,Phanerophyte,"Vines, Stem climbers",Canopy gap,Low,15,Yes,None,None,Broad leaved,100,30,Evergreen,NZ,Native,Woody,Vine,2356.19449
+Rubus fruticosus,Phanerophyte,"Woody species, Spreading to erect small shrubs",Community disturbance,High,2,Yes,Creeping stems,Root suckers,Broad leaved,160,110,Semi-evergreen,Europe,Exotic,Woody,Shrub,13823.00768
+Rubus schmidelioides,Phanerophyte,"Vines, Stem climbers",Canopy gap,Low,10,Yes,None,None,Broad leaved,67,22,Evergreen,NZ,Native,Herbaceous,Vine,1157.676893
+Rubus squarrosus,Phanerophyte,"Vines, Stem climbers",Community disturbance,Moderate,10,Yes,Creeping stems,None,Broad leaved,190,50,Evergreen,NZ,Native,Herbaceous,Vine,7461.282552
+Salix cinerea,Phanerophyte,"Woody species, Medium trees (6-10m)",Community disturbance,Moderate,7,No,Root suckers,None,Broad leaved,55,25,Deciduous,Europe,Exotic,Woody,Tree,1079.922475
+Sambucus nigra,Phanerophyte,"Woody species, Small trees (3-6m)",Community disturbance,Moderate,6,No,Root suckers,None,Broad leaved,88,49,Evergreen,Europe,Exotic,Woody,Tree,3386.636881
+Scandia geniculata,Phanerophyte,"Vines, Stem climbers",Community disturbance,Low,3,No,Creeping stems,None,Broad leaved,22,12,Evergreen,NZ,Native,Woody,Shrub,207.3451151
+Schefflera digitata,Phanerophyte,"Woody species, Medium trees (6-10m)",Canopy gap,High,8,No,None,None,Broad leaved,160,160,Evergreen,NZ,Native,Woody,Tree,20106.19298
+Sophora microphylla,Phanerophyte,"Woody species, Medium trees (6-10m)",Community disturbance,Moderate,10,No,None,None,Broad leaved,150,14,Evergreen,NZ,Native,Woody,Tree,1649.336143
+Urtica ferox,Phanerophyte,"Woody species, Spreading to erect small shrubs",Community disturbance,Moderate,2.5,Yes,None,None,Broad leaved,100,40,Evergreen,NZ,Native,Woody,Shrub,3141.592654
+Vitex lucens,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,20,No,None,None,Broad leaved,190,40,Evergreen,NZ,Native,Woody,Tree,5969.026042
+Weinmannia racemosa,Phanerophyte,"Woody species, Large trees (> 10m)",Canopy gap,Moderate,25,No,None,None,Broad leaved,85,30,Evergreen,NZ,Native,Woody,Tree,2002.765317
