@@ -18,13 +18,13 @@ colnames(trait.dat)<-c("Taxon", "Raunkiaer Life Mode", "Esler Life Mode", "Regen
                        "Vegetative Organs", "Leaf", "Leaf Form", "Max Mean Leaf Length (mm)", 
                        "Leaf Width (mm)", "Mean Leaf Lifespan (months)", "Leaf Longevity")
 
-## cross-ref NVS names against farm data species codes & extract just the ones that are on our farm
-nvs<-read.csv("CurrentNVSNames.csv", header=T, stringsAsFactors = F)
-farmdat<-read.csv("farm_summaries.csv", header=T, stringsAsFactors = F)
-nvs$infarm<-nvs$NVSCode%in%farmdat$NVSCode
-
+## cross-ref NVS names against farm data species codes & get preferred sci name
+nvs<-read.csv("fire/CurrentNVSNames.csv", header=T, stringsAsFactors = F)
+dat<-read.csv("fire/burn_list.csv", header=T, stringsAsFactors = F)
+dat2<-merge(dat, nvs, by="NVSCode", all.x = T)
+rm(nvs, dat)
 ## this is the input data for the search function
-taxon.list<-subset(nvs, infarm=="TRUE")
+taxon.list<-dat2
 ## create an empty list for storing failed searches
 fail.list<-list()
 
@@ -32,7 +32,7 @@ fail.list<-list()
 for (i in 1:nrow(taxon.list)) {
   remDr$navigate("https://ecotraits.landcareresearch.co.nz/SearchForm.aspx")
   
-  taxon<-taxon.list[i,13]
+  taxon<-taxon.list[i,14]
   
   species<- remDr$findElement(using = 'name', "SearchText")
   species$sendKeysToElement(list(taxon))
@@ -77,10 +77,11 @@ for (i in 1:nrow(taxon.list)) {
     }else{
       print (paste("No morphological trait data found for species:", taxon))
       fail.list<-append(taxon, fail.list)
+      fail.list<-t(t(fail.list))
     }
   }
 }
 
 # write results data to file
-write.csv(trait.dat, file="traits.csv", row.names = F)
+write.csv(trait.dat, file="traits_raw.csv", row.names = F)
 write.csv(fail.list, file="failed_searches.csv", row.names=F)
