@@ -1,7 +1,7 @@
 ---
-title: "Summarising vegetation survey data"
+title: "prelim_veg_analysis"
 author: "Jennifer Pannell"
-date: "1 March 2019"
+date: "1 February 2019"
 output: html_document
 ---
 
@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list=ls())
 library(tidyr)
 library(plyr)
-
 ```
 
 ## Read data, remove NA values
@@ -22,16 +21,14 @@ dat<-na.omit(dat)
 
 # strip white space from species names
 dat$SpeciesName<-trimws(dat$SpeciesName)
+dat$PlotNo<-trimws(dat$PlotNo)
 
 # create unique plot ID column
 dat$ID<-paste(dat$Farm,dat$PlotNo)
 # read in plot data & merge
 plots<-read.csv("plot_info.csv", header=T)
+plots$PlotNo<-trimws(plots$PlotNo)
 dat<-merge(plots, dat, by="PlotNo")
-
-# change veg class NA to Unknown
-levels(dat$VegClass)<-c( "F_Ex_Pl_Contin", "F_N_Reg_Contin", "F_N_Reg_Diff", "F_N_Reg_Sparse", "F_N_Rem_Contin", "G_Ex_Pl_Contin", "Unknown")
-dat$VegClass[is.na(dat$VegClass)]<-"Unknown"
 
 ```
 
@@ -46,10 +43,10 @@ trees<-subset(dat, variable=="CoverClass.25m"|
                 variable=="CoverClass2.5m")
 
 # make into a summary table - one row per species per farm per habitat
-summary.trees<-trees[,12]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=mean, na.rm=T)
+summary.trees<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=mean, na.rm=T)
 names(summary.trees)<-c("FarmName", "VegClass", "SpeciesName", "MeanCover")
-summary.trees$SDcover<-trees[,12]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.trees$SumCover<-trees[,12]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
+summary.trees$SDcover<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
+summary.trees$SumCover<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
 summary.trees<-trees%>%count(c("FarmName", "VegClass", "SpeciesName"))%>%merge(.,summary.trees, by=c("FarmName", "VegClass", "SpeciesName"))
 
 summary.trees<-summary.trees[order(summary.trees$FarmName, summary.trees$VegClass, -summary.trees$SumCover),]
@@ -62,10 +59,10 @@ summary.trees$Layer<-"tree"
 shrubs<-subset(dat, variable=="CoverClass0.3.2m")
 
 # make into a summary table - one row per species per farm
-summary.shrubs<-shrubs[,12]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=mean, na.rm=T)
+summary.shrubs<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=mean, na.rm=T)
 names(summary.shrubs)<-c("FarmName", "VegClass", "SpeciesName", "MeanCover")
-summary.shrubs$SDcover<-shrubs[,12]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.shrubs$SumCover<-shrubs[,12]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
+summary.shrubs$SDcover<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
+summary.shrubs$SumCover<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
 summary.shrubs<-shrubs%>%count(c("FarmName", "VegClass", "SpeciesName"))%>%merge(.,summary.shrubs, by=c("FarmName", "VegClass", "SpeciesName"))
 
 # add a "tree" column so can merge back later
@@ -77,10 +74,10 @@ summary.shrubs$Layer<-"shrub"
 under<-subset(dat, variable=="CoverClass.0.3m")
 
 # make into a summary table - one row per species per farm
-summary.under<-under[,12]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=mean, na.rm=T)
+summary.under<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=mean, na.rm=T)
 names(summary.under)<-c("FarmName","VegClass", "SpeciesName", "MeanCover")
-summary.under$SDcover<-under[,12]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.under$SumCover<-under[,12]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
+summary.under$SDcover<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
+summary.under$SumCover<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
 summary.under<-under%>%count(c("FarmName","VegClass", "SpeciesName"))%>%merge(.,summary.under, by=c("FarmName","VegClass", "SpeciesName"))
 
 # add a "tree" column so can merge back later
@@ -112,12 +109,14 @@ summary<-summary[order(summary$FarmName, summary$Layer, summary$VegClass, -summa
 How many of theses species do we have flammability data for?
 ```{r merge burn data}
 burn<-read.table("burn_list.txt", header=T, sep="\t")
+congen<-read.table("congener_list.txt", header=T, sep="\t")
 
 summary$burned<-summary$NVSCode%in%burn$NVSName
+summary$congener<-summary$NVSCode%in%congen$NVSName
 
 ```
 
-
+#Write summary file
 ```{r write file}
 write.csv(summary, file="farm_summaries.csv", row.names = F)
 
