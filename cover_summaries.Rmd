@@ -47,7 +47,7 @@ summary.trees<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, tr
 names(summary.trees)<-c("FarmName", "VegClass", "SpeciesName", "MeanCover")
 summary.trees$SDcover<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
 summary.trees$SumCover<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.trees<-trees%>%count(c("FarmName", "VegClass", "SpeciesName"))%>%merge(.,summary.trees, by=c("FarmName", "VegClass", "SpeciesName"))
+summary.trees<-trees%>%count(FarmName, VegClass, SpeciesName)%>%merge(.,summary.trees, by=c("FarmName", "VegClass", "SpeciesName"))
 
 summary.trees<-summary.trees[order(summary.trees$FarmName, summary.trees$VegClass, -summary.trees$SumCover),]
 # add a "tree" column so can merge back later
@@ -63,7 +63,7 @@ summary.shrubs<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass
 names(summary.shrubs)<-c("FarmName", "VegClass", "SpeciesName", "MeanCover")
 summary.shrubs$SDcover<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
 summary.shrubs$SumCover<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.shrubs<-shrubs%>%count(c("FarmName", "VegClass", "SpeciesName"))%>%merge(.,summary.shrubs, by=c("FarmName", "VegClass", "SpeciesName"))
+summary.shrubs<-shrubs%>%count(FarmName, VegClass, SpeciesName)%>%merge(.,summary.shrubs, by=c("FarmName", "VegClass", "SpeciesName"))
 
 # add a "tree" column so can merge back later
 summary.shrubs$Layer<-"shrub"
@@ -78,7 +78,7 @@ summary.under<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, un
 names(summary.under)<-c("FarmName","VegClass", "SpeciesName", "MeanCover")
 summary.under$SDcover<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
 summary.under$SumCover<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.under<-under%>%count(c("FarmName","VegClass", "SpeciesName"))%>%merge(.,summary.under, by=c("FarmName","VegClass", "SpeciesName"))
+summary.under<-under%>%count(FarmName, VegClass, SpeciesName)%>%merge(.,summary.under, by=c("FarmName","VegClass", "SpeciesName"))
 
 # add a "tree" column so can merge back later
 summary.under$Layer<-"understorey"
