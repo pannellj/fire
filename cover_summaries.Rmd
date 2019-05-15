@@ -1,7 +1,7 @@
 ---
-title: "prelim_veg_analysis"
+title: "updated_veg_analysis"
 author: "Jennifer Pannell"
-date: "1 February 2019"
+date: "15 May 2019"
 output: html_document
 ---
 
@@ -32,64 +32,44 @@ dat<-merge(plots, dat, by="PlotNo")
 
 ```
 
-## Divide into trees, shrubs, understorey
-# Trees = above 2m
-In each codeblock, aggregate trees, shrubs & understorey by farm & vegetation class, and by species, calcluating mean and SD and total cover abundance. 
+## Calculate stratum weights
 
-```{r trees}
-trees<-subset(dat, variable=="CoverClass.25m"|
-                variable=="CoverClass12.25m"|
-                variable=="CoverClass5.12m"|
-                variable=="CoverClass2.5m")
 
-# make into a summary table - one row per species per farm per habitat
-summary.trees<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=mean, na.rm=T)
-names(summary.trees)<-c("FarmName", "VegClass", "SpeciesName", "MeanCover")
-summary.trees$SDcover<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.trees$SumCover<-trees[,14]%>%aggregate(by=list(trees$FarmName, trees$VegClass, trees$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.trees<-trees%>%count(FarmName, VegClass, SpeciesName)%>%merge(.,summary.trees, by=c("FarmName", "VegClass", "SpeciesName"))
+```{r stratum weights}
+variable<-levels(dat$variable)
+# make height values for each class in order of levels - the difference between lowest & hightest values
+height<-c(0.3, 10, 1.7, 13, 3, 7)
+logheight<-log10(height)
+values<-data.frame(variable,height,logheight)
+rm(variable,height,logheight)
+#merge with original data 
 
-summary.trees<-summary.trees[order(summary.trees$FarmName, summary.trees$VegClass, -summary.trees$SumCover),]
-# add a "tree" column so can merge back later
-summary.trees$Layer<-"tree"
+dat<-merge(dat,values, by="variable")
+
 ```
 
-# Shrubs = Shrubs = above 30cm
-```{r shrubs}
-shrubs<-subset(dat, variable=="CoverClass0.3.2m")
+# In this codeblock, calculate an IV per species per plot 
+```{r plot summaries}
+dat$IV<-dat$value*dat$logheight
 
+# make into a summary table - one row per species per plot
+summary.plot<-dat[,18]%>%aggregate(by=list(dat$PlotID, dat$SpeciesName), FUN=sum, na.rm=T)
+names(summary.plot)<-c("PlotID", "SpeciesName", "IV")
+
+summary.plot<-merge(summary.plot,plots,by="PlotID")
+
+write.csv(summary.plot, file="plot_IV.csv", row.names = F)
+
+```
+
+# Summarize by farm & vegetation class, and by species, calcluating mean and SD and total IV. 
+```{r veg class summaries}
 # make into a summary table - one row per species per farm
-summary.shrubs<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=mean, na.rm=T)
-names(summary.shrubs)<-c("FarmName", "VegClass", "SpeciesName", "MeanCover")
-summary.shrubs$SDcover<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.shrubs$SumCover<-shrubs[,14]%>%aggregate(by=list(shrubs$FarmName, shrubs$VegClass, shrubs$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.shrubs<-shrubs%>%count(FarmName, VegClass, SpeciesName)%>%merge(.,summary.shrubs, by=c("FarmName", "VegClass", "SpeciesName"))
-
-# add a "tree" column so can merge back later
-summary.shrubs$Layer<-"shrub"
-```
-
-# Understorey = below 30cm
-```{r understorey}
-under<-subset(dat, variable=="CoverClass.0.3m")
-
-# make into a summary table - one row per species per farm
-summary.under<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=mean, na.rm=T)
-names(summary.under)<-c("FarmName","VegClass", "SpeciesName", "MeanCover")
-summary.under$SDcover<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.under$SumCover<-under[,14]%>%aggregate(by=list(under$FarmName, under$VegClass, under$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.under<-under%>%count(FarmName, VegClass, SpeciesName)%>%merge(.,summary.under, by=c("FarmName","VegClass", "SpeciesName"))
-
-# add a "tree" column so can merge back later
-summary.under$Layer<-"understorey"
-```
-
-# Master data frame
-Merge all of the understorey, shrub and tree dataframes back together to final data frame
-```{r merge back}
-summary<-rbind(summary.trees, summary.shrubs, summary.under)
-# remove the extra data frames
-rm(summary.shrubs, summary.trees, summary.under, shrubs, trees, under)
+summary.vegclass<-summary.plot[,3]%>%aggregate(by=list(summary.plot$FarmName, summary.plot$VegClass, summary.plot$SpeciesName), FUN=mean, na.rm=T)
+names(summary.vegclass)<-c("FarmName","VegClass", "SpeciesName", "MeanIV")
+summary.vegclass$SDIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$FarmName, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
+summary.vegclass$SumIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$FarmName, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
+summary.vegclass<-summary.plot%>%count(vars=c("FarmName", "VegClass", "SpeciesName"))%>%merge(.,summary.vegclass, by=c("FarmName","VegClass", "SpeciesName"))
 
 ```
 
@@ -97,12 +77,12 @@ rm(summary.shrubs, summary.trees, summary.under, shrubs, trees, under)
 Now merge with the NVS table to give us the scientific names of each species code
 ```{r merge scientific name from NVS}
 names<-read.csv("CurrentNVSNames.csv", header=T)
-summary$SpeciesName<-toupper(summary$SpeciesName)
-names(summary)[3]<-"NVSCode"
+summary.vegclass$SpeciesName<-toupper(summary.vegclass$SpeciesName)
+names(summary.vegclass)[3]<-"NVSCode"
 names$NVSCode<-toupper(names$NVSCode)
 
-summary<-merge(summary, names[,c(1,3,5,6)], by="NVSCode", all.x=TRUE)
-summary<-summary[order(summary$FarmName, summary$Layer, summary$VegClass, -summary$SumCover),]
+summary.vegclass<-merge(summary.vegclass, names[,c(1,3,5,6)], by="NVSCode", all.x=TRUE)
+summary.vegclass<-summary.vegclass[order(summary.vegclass$FarmName, summary.vegclass$VegClass, -summary.vegclass$SumIV),]
 ```
 
 #Burn data
@@ -111,12 +91,12 @@ How many of theses species do we have flammability data for?
 burn<-read.table("burn_list.txt", header=T, sep="\t")
 congen<-read.table("congener_list.txt", header=T, sep="\t")
 
-summary$burned<-summary$NVSCode%in%burn$NVSName
-summary$congener<-summary$NVSCode%in%congen$NVSName
+summary.vegclass$burned<-summary.vegclass$NVSCode%in%burn$NVSName
+summary.vegclass$congener<-summary.vegclass$NVSCode%in%congen$NVSName
 
 ```
 
-#Write summary file
+
 ```{r write file}
 write.csv(summary, file="farm_summaries.csv", row.names = F)
 
