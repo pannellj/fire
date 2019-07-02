@@ -33,12 +33,10 @@ dat<-merge(plots, dat, by="PlotNo")
 ```
 
 ## Calculate stratum weights
-
-
 ```{r stratum weights}
 variable<-levels(dat$variable)
 # make height values for each class in order of levels - the difference between lowest & hightest values
-height<-c(0.3, 10, 1.7, 13, 3, 7)
+height<-c(0.3, 15, 1.7, 13, 3, 7)
 logheight<-log10(height)
 values<-data.frame(variable,height,logheight)
 rm(variable,height,logheight)
@@ -48,9 +46,23 @@ dat<-merge(dat,values, by="variable")
 
 ```
 
-# In this codeblock, calculate an IV per species per plot 
+## Now calculate % cover abundance weights
+```{r stratum weights}
+value<-seq(0,7)
+# make midpoint values for % cover abundance
+midpoint<-c(0,0.5,3,8,18,38,63,88)
+values2<-data.frame(value,midpoint)
+rm(value,midpoint)
+#merge with original data 
+
+dat<-merge(dat,values2, by="value")
+
+```
+
+## In this codeblock, calculate an IV per species per plot 
 ```{r plot summaries}
-dat$IV<-dat$value*dat$logheight
+# calculate the importance value with raw tier depth and % mid points
+dat$IV<-dat$midpoint*dat$height
 
 # make into a summary table - one row per species per plot
 summary.plot<-dat[,18]%>%aggregate(by=list(dat$PlotID, dat$SpeciesName), FUN=sum, na.rm=T)
@@ -98,7 +110,7 @@ summary.vegclass$congener<-summary.vegclass$NVSCode%in%congen$NVSName
 
 
 ```{r write file}
-write.csv(summary, file="farm_summaries.csv", row.names = F)
+write.csv(summary.vegclass, file="farm_summaries.csv", row.names = F)
 
 ```
 

@@ -1,0 +1,199 @@
+---
+title: "Community Weighted Means - Flammability"
+author: "Jennifer Pannell"
+date: "7 June 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+library(tidyverse)
+library(reshape2)
+```
+#Intro
+This R markdown will calculate individual species flammability values, and then merge that with the community cover abundance data.
+The output will be a flammability score for each vegetation class.
+Things to investigate:
+*Do we calculate flammability for the average community within veg type, or the flammability for each plot then average by veg type? Update 01/07/19 - per plot, then average flam per veg type 
+*Perhaps the best thing to do is both, see how it compares. Update 01/07/19 - try above first
+*Should we just do this for the PC flammability scores, or also the raw flammability traits? Start with PC.
+
+##Notes on data cleaning pre-reading into R
+*I amalgamated all data from Tim's group - different spreadsheets
+*Ignition time all seemed to be pre-inversion (i.e. shows actual time not inverse like Padulles et al paper)
+*Discrepancies between how non burning samples recorded for ignition time (temp = 150, others = 0) - I have assigned these times of 11s to distinguish them from ones that did burn (max = 10)
+*Data from Xinglei has missing values (#DIV/0!) for a number of ignition time scores. Not sure why, no formulae in spreadsheet.
+*Update - because his data are means, of the one Azhar sent, and he hasn't removed zeroes etc. Have replaced with NA
+*Data from Azhar has some inconsistency too, measured by different people? Some species names don't match NVS, some have no times recorded, some that seem to be no burns have been given inconsistent ignite times of 11, 1, 0.5 or 0, some have been given temps of 0 which I think also are no burns (have assigned them 11 150 0 0 like all others)
+
+# Read in data
+```{r read species burn data, echo=T, results='hide'}
+burn<-read.csv("burndat.csv", header=T, stringsAsFactors = F)
+# Make sure NVS code is all caps
+burn$NVSCode<-toupper(burn$NVSCode)
+```
+
+# Fix missing ignition times
+```{r deal with missing ignition time data, echo=T, results='hide'}
+# assume it can be predicted by other 3 vars as they are all quite correlated
+# use negative binomial to account for the overdispersion and disallow negative values
+mod<-MASS::glm.nb(as.integer(IgnitionTime)~BurnBiomass+MaxTemp+BurnTime, data=burn)
+
+# predict ignition time where missing based on other 3 values and nb model
+for(i in 1:nrow(burn)){
+  if (is.na(burn$IgnitionTime[i])==TRUE){
+    burn$IgnitionTime[i]<-predict(mod, newdata=burn[i,], type="response")
+  }
+}
+
+# inversely rescale ignitability so it's higher for sp that are more flammable
+burn$Ignitability<-max(burn$IgnitionTime)-burn$IgnitionTime
+
+rm(mod, i)
+
+```
+
+# Create community matrix
+```{r read in community data, echo=T, results='hide'}
+community<-read.csv2("Plot_IV.csv", header=T, sep=",",  stringsAsFactors = F)
+community$SpeciesName<-toupper(community$SpeciesName)
+names(community)[2]<-"NVSCode" #rename this to be consistent with burn
+community$IV<-as.numeric(community$IV)
+
+# create matrix with plots in rows, species in columns, IV as values
+cmat<-dcast(community, formula=PlotID~NVSCode, value.var = "IV", sum)
+
+# add full latin name to community dataframe
+nvs<-read.csv("CurrentNVSNames.csv", header=T, sep=",", stringsAsFactors = F)
+nvs$NVSCode<-toupper(nvs$NVSCode)
+community<-merge(community, nvs[,c(1,13)], by="NVSCode")
+names(community)[14]<-"SpeciesName"
+```
+
+# Identify species with no flammability data and assign them mean value for genus
+```{r deal with missing species, echo=T, results='hide'}
+# do we have flam data for all spp?
+community$flamdata<-community$NVSCode%in%burn$NVSCode
+
+# what about data for same genus
+burn$Genus<-stringr::word(burn$SpeciesName, 1)
+community$Genus<-stringr::word(community$SpeciesName, 1)
+community$genusflam<-community$Genus%in%burn$Genus
+
+# select species that have no flam data but have a matching genus
+flamgen<- subset(community, flamdata==FALSE&genusflam==TRUE)
+
+# create empty data frame
+SpeciesName<-unique(flamgen$SpeciesName)
+Sample<-rep(NA, length(SpeciesName))
+NVSCode<-unique(flamgen$NVSCode)
+IgnitionTime<-rep(NA, length(SpeciesName))
+MaxTemp<-rep(NA, length(SpeciesName))
+BurnTime<-rep(NA, length(SpeciesName))
+BurnBiomass<-rep(NA, length(SpeciesName))
+Ignitability<-rep(NA, length(SpeciesName))
+
+newdat<-data.frame(SpeciesName, Sample, NVSCode, IgnitionTime, MaxTemp, BurnTime, BurnBiomass, Ignitability)
+newdat$Genus<-stringr::word(newdat$SpeciesName, 1)
+
+# apply genus mean to each species in newdat
+for (i in 1:nrow(newdat)){
+  a<-newdat$Genus[i]
+  genusmeans<-burn %>%
+    group_by(Genus) %>%
+    summarise_at(c("IgnitionTime", "MaxTemp", "BurnTime", "BurnBiomass", "Ignitability"), mean, na.rm=TRUE)%>%
+    subset(Genus==a)
+  newdat[i,c(4:8)]<-genusmeans[1,2:6]
+  rm(a, genusmeans)
+}
+
+
+burn<-rbind(burn, newdat)
+
+rm(newdat,i,BurnBiomass, BurnTime, Ignitability, IgnitionTime, MaxTemp, NVSCode, Sample, SpeciesName, flamgen)
+
+```
+
+# Run PCA on flammability data, assign PC1 score to species as flammability score
+```{r PCA on flammability}
+# create mean value per species so each species has just one pca score
+pca_dat<-burn[,c(5:8)]%>%aggregate(by=list(burn$NVSCode), FUN=mean, na.rm=T)
+names(pca_dat)[1]<-"NVSCode"
+
+vars<-c("MaxTemp","BurnTime","BurnBiomass", "Ignitability")
+
+my.pca <- prcomp(pca_dat[,c(2:5)], scale = TRUE) # perform a principal components analysis
+summary(my.pca)   # look at the variance explained
+plot(my.pca)      # plot the eigenvalues
+biplot(my.pca)    # plot the site scores and the species vectors
+
+# assign PC scores to species
+pca_dat$PC1 <- my.pca$x[,1] # extract the species scores and
+pca_dat$PC2 <- my.pca$x[,2] # add them to the species summary dataset
+
+rm(my.pca, vars)
+
+```
+
+# Multiply community matrices by flammability score vector to get cwm of flammability
+```{r community weighted flammability, echo=TRUE, results="hide"}
+# remove all from species summary data that aren't in community
+pca_dat<-pca_dat %>% semi_join(community, by = "NVSCode")
+
+# temporary, until can find out what to do about species that are completely missing i.e.  no genus
+NVSCode<-unique(community$NVSCode)
+SpeciesName<-unique(community$SpeciesName)
+tempdat<-data.frame(NVSCode, SpeciesName)
+tempdat<-merge(pca_dat, tempdat, by="NVSCode", all.y=TRUE)
+rm(NVSCode, SpeciesName)
+#assign ones with no flammability score something far below the min flam score so easily ID - minus 5
+tempdat$PC1[is.na(tempdat$PC1)] <- -5
+
+# make col 1 of community matrix into rownames so can multiply, create vector of flam traits (pc1)
+rownames(cmat) <- cmat[,1]
+cmat<-cmat[,c(2:ncol(cmat))]
+pc1<-tempdat$PC1
+
+# multiply the IV values in community matrix by their corresponding species pc1 score
+com1<-sweep(cmat, MARGIN=2, pc1, `*`)
+
+# calculate the sum of species IV in each site
+av_com <- rowSums(cmat, na.rm=F, dims=1)
+
+#Then, we do the same with trait values:
+av_com1 <- rowSums(com1, na.rm=F, dims=1)
+
+#Finally, we divide the two previous matrix:
+aCWM <-data.frame(av_com1/av_com)%>%
+  tibble::rownames_to_column("PlotID")%>%
+  rename(Community_Flam = av_com1.av_com )
+# add the veg data
+aCWM<-community %>%
+    select(PlotID, VegClass) %>%
+    distinct() %>%
+    right_join(aCWM, by = 'PlotID')
+
+aCWM$Farm<-stringr::word(aCWM$PlotID, 1)
+# write data to csv
+write.csv(aCWM, file="temp_community_flam.csv", row.names = F)
+rm(av_com, av_com1, pc1, com1, cmat)
+```
+
+# Does flammability vary between veg types on farms?
+```{r flammability plots by veg type}
+a<-ggplot(aCWM, aes(VegClass, Community_Flam))+
+  geom_boxplot()+
+  theme(axis.text.x = element_text(angle=90))+
+  xlab("Rank by sum IV")+
+  facet_grid(.~Farm, scales="free")
+a
+
+```
+
+Things still to fix as of 02.07.2019
+
+1. 30 species no flam data - have emailed Tim & Azhar, awaiting response. Estimate from traits??
+2. Estimates currently biased bc they don't include pasture - how to incorporate? e.g. sparse forest might be more flammable bc of all the highly flammable pasture sp, but at the moment this isnt' accounted for and so contin comes up more flam bc it has more biomass. Adjust IV scores per plot by % cover as per original raw data from Stacey?
+
+
