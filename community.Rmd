@@ -32,6 +32,8 @@ Things to investigate:
 burn<-read.csv("burndat.csv", header=T, stringsAsFactors = F)
 # Make sure NVS code is all caps
 burn$NVSCode<-toupper(burn$NVSCode)
+# Strip white space
+burn$NVSCode<-tm::stripWhitespace(burn$NVSCode)
 ```
 
 # Fix missing ignition times
@@ -58,6 +60,7 @@ rm(mod, i)
 ```{r read in community data, echo=T, results='hide'}
 community<-read.csv2("Plot_IV.csv", header=T, sep=",",  stringsAsFactors = F)
 community$SpeciesName<-toupper(community$SpeciesName)
+community$SpeciesName<-tm::stripWhitespace(community$SpeciesName)
 names(community)[2]<-"NVSCode" #rename this to be consistent with burn
 community$IV<-as.numeric(community$IV)
 
@@ -71,7 +74,7 @@ community<-merge(community, nvs[,c(1,13)], by="NVSCode")
 names(community)[14]<-"SpeciesName"
 ```
 
-# Identify species with no flammability data and assign them mean value for genus
+# Identify species with no flammability data and assign them mean value for genus or closest in terms of traits
 ```{r deal with missing species, echo=T, results='hide'}
 # do we have flam data for all spp?
 community$flamdata<-community$NVSCode%in%burn$NVSCode
