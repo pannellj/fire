@@ -16,19 +16,20 @@ library(plyr)
 
 ```{r veg data}
 dat<-read.csv("cover_class_data_long_all.csv", header=T)
-# get rid of the NA's
+# turn NA to 0
+dat[is.na(dat)]<-0
 dat<-na.omit(dat)
 
-# strip white space from species names
+# strip white space from species names & plot IDs
 dat$SpeciesName<-trimws(dat$SpeciesName)
 dat$PlotNo<-trimws(dat$PlotNo)
+dat$PlotID<-trimws(dat$PlotID)
 
-# create unique plot ID column
-dat$ID<-paste(dat$Farm,dat$PlotNo)
 # read in plot data & merge
 plots<-read.csv("plot_info.csv", header=T)
 plots$PlotNo<-trimws(plots$PlotNo)
-dat<-merge(plots, dat, by="PlotNo")
+plots$PlotID<-trimws(plots$PlotID)
+dat<-merge(plots, dat[,c(3:6)], by="PlotID")
 
 ```
 
@@ -36,7 +37,7 @@ dat<-merge(plots, dat, by="PlotNo")
 ```{r stratum weights}
 variable<-levels(dat$variable)
 # make height values for each class in order of levels - the difference between lowest & hightest values
-height<-c(0.3, 15, 1.7, 13, 3, 7)
+height<-c(1.7, 0.3, 13, 3, 10, 7)
 logheight<-log10(height)
 values<-data.frame(variable,height,logheight)
 rm(variable,height,logheight)
@@ -77,11 +78,11 @@ write.csv(summary.plot, file="plot_IV.csv", row.names = F)
 # Summarize by farm & vegetation class, and by species, calcluating mean and SD and total IV. 
 ```{r veg class summaries}
 # make into a summary table - one row per species per farm
-summary.vegclass<-summary.plot[,3]%>%aggregate(by=list(summary.plot$FarmName, summary.plot$VegClass, summary.plot$SpeciesName), FUN=mean, na.rm=T)
-names(summary.vegclass)<-c("FarmName","VegClass", "SpeciesName", "MeanIV")
-summary.vegclass$SDIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$FarmName, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.vegclass$SumIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$FarmName, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.vegclass<-summary.plot%>%count(vars=c("FarmName", "VegClass", "SpeciesName"))%>%merge(.,summary.vegclass, by=c("FarmName","VegClass", "SpeciesName"))
+summary.vegclass<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$VegClass, summary.plot$SpeciesName), FUN=mean, na.rm=T)
+names(summary.vegclass)<-c("Farm","VegClass", "SpeciesName", "MeanIV")
+summary.vegclass$SDIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
+summary.vegclass$SumIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
+summary.vegclass<-summary.plot%>%count(vars=c("Farm", "VegClass", "SpeciesName"))%>%merge(.,summary.vegclass, by=c("Farm","VegClass", "SpeciesName"))
 
 ```
 
@@ -94,7 +95,7 @@ names(summary.vegclass)[3]<-"NVSCode"
 names$NVSCode<-toupper(names$NVSCode)
 
 summary.vegclass<-merge(summary.vegclass, names[,c(1,3,5,6)], by="NVSCode", all.x=TRUE)
-summary.vegclass<-summary.vegclass[order(summary.vegclass$FarmName, summary.vegclass$VegClass, -summary.vegclass$SumIV),]
+summary.vegclass<-summary.vegclass[order(summary.vegclass$Farm, summary.vegclass$VegClass, -summary.vegclass$SumIV),]
 ```
 
 #Burn data
