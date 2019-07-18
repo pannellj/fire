@@ -1,3 +1,4 @@
+# do Ctrl shift f10 to restart R
 rm(list=ls())
 gc()
 
@@ -7,9 +8,8 @@ library(stringr)
 library(RSelenium)
 
 ## open the remote driver session
-rD<-rsDriver(port=4444L,browser="chrome")
-remDr <- rD$client
-
+rsDr<-rsDriver(port=4444L, browser="firefox")
+remDr <- rsDr$client
 # create an empty matrix to store trait data in
 trait.dat<-matrix(nrow=0, ncol=17)
 colnames(trait.dat)<-c("Taxon", "Raunkiaer Life Mode", "Esler Life Mode", "Regeneration", 
@@ -19,12 +19,12 @@ colnames(trait.dat)<-c("Taxon", "Raunkiaer Life Mode", "Esler Life Mode", "Regen
                        "Leaf Width (mm)", "Mean Leaf Lifespan (months)", "Leaf Longevity")
 
 ## cross-ref NVS names against farm data species codes & get preferred sci name
-nvs<-read.csv("fire/CurrentNVSNames.csv", header=T, stringsAsFactors = F)
-dat<-read.csv("fire/burn_list.csv", header=T, stringsAsFactors = F)
+nvs<-read.csv("CurrentNVSNames.csv", header=T, stringsAsFactors = F)
+dat<-read.table("all_sp_list.txt", header=T, sep=",")
 dat2<-merge(dat, nvs, by="NVSCode", all.x = T)
 rm(nvs, dat)
 ## this is the input data for the search function
-taxon.list<-dat2
+taxon.list<-subset(dat2, SpeciesName!="NA")
 ## create an empty list for storing failed searches
 fail.list<-list()
 
@@ -32,7 +32,7 @@ fail.list<-list()
 for (i in 1:nrow(taxon.list)) {
   remDr$navigate("https://ecotraits.landcareresearch.co.nz/SearchForm.aspx")
   
-  taxon<-taxon.list[i,14]
+  taxon<-taxon.list[i,13]
   
   species<- remDr$findElement(using = 'name', "SearchText")
   species$sendKeysToElement(list(taxon))
@@ -72,7 +72,7 @@ for (i in 1:nrow(taxon.list)) {
       dat<-data.frame(trait, value)%>% apply(2, function(x) gsub("^$|^ $", NA, x))%>%.[rowSums(is.na(.)) != ncol(.),]%>%
         t()%>%.[2,]%>%append(taxon,.)
       
-      trait.dat<-rbind(trait.dat, dat)
+      trait.dat<-data.frame(rbind(trait.dat, dat))
       print(paste("Species trait data added to data frame:", taxon))
     }else{
       print (paste("No morphological trait data found for species:", taxon))
