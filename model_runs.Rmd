@@ -1,0 +1,139 @@
+---
+title: "Model Runs"
+author: "Jennifer Pannell"
+date: "25/09/2019"
+output: html_document
+---
+## Introduction
+
+This R markdown calls the final step of flammability analyses, the landscape community flammability models (file = landscape_model.R)
+It requires community_flam.csv as an input, which is the output of community.Rmd
+It also requires a csv of polygon IDs for the landscape with associated vegetation classes (polygons.csv), and a raster of polygon IDs (landscape_can.tif).
+Finally, it either requires csvs of pasture and pine flammability estimates, or you will need to manually specify those values before running the "assign raster values" r chunk.
+
+Note that Graham's landscape rasters have been aggregated by a factor of 4 to keep files manageable, and have been intersected with the LCDB to mask out areas of non vegetation.
+
+```{r setup, include=FALSE}
+rm(list=ls())
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(raster)
+library(grainscape)
+library(spatialEco)
+library(igraph)
+```
+
+Firstly, read in the data frames of community flammability and polygon IDs with their veg classes, as well as a raster with the polygon IDs.
+```{r read in data}
+#### read in data ####
+# read in flammability data output from community.Rmd and rename GrahamClass to Veg_Class
+sample.plots<-read.csv("../ls_model_inputs/community_flam.csv", header=T, stringsAsFactors = F)%>%dplyr::rename(Veg_Class=GrahamClass)
+# read in table of polygon IDs and associated veg classes with which to assign flam values
+polygons.raw<-read.csv("../ls_model_inputs//polygons.csv", header=T, stringsAsFactors = F)
+# also read in raster of polygon IDs, use this to then reclassify as flam values
+landscape<-raster("../ls_model_inputs//landscape_can.tif")
+# read in pasture flammability estimate - if not using this, comment it out
+# pasture<-read.csv("..//ls_model_inputs//pasture_community_flam.csv", header=T, stringsAsFactors = F)
+# read in pine flammability estimates - if not using this, comment it out
+pine<-read.csv("..//ls_model_inputs//pine_community_flam.csv", header=T, stringsAsFactors = F)
+```
+
+This section checks whether all of the woody veg classes in the landscape have been sampled
+```{r missing value estimation}
+# first, check that all of your landscape values that aren't pasture are represented by the plots
+paste(unique(polygons.raw$Veg_Class), unique(polygons.raw$Veg_Class)%in%unique(sample.plots$Veg_Class))
+
+# missing: 
+# diffuse pine & kanuka & deciduous (note misspelling in original layer name)
+# should be halfway between sparse and continuous of same classes
+# mixed native sparse - minimum of other 2 mixed native classes
+# continuous old growth & diffuse & sparse - assign mixed native respectively
+
+# OK - so some are missing. Assign them as the mean in the next section
+polygons.raw$sampled<-polygons.raw$Veg_Class%in%sample.plots$Veg_Class
+summary(polygons.raw$sampled) # luckily it's quite a small proportion of the polygons
+
+# assign values 
+dec.diff<-(subset(sample.plots, Veg_Class=="Decidious (Contin.)")%>%.[,3]%>%mean()+
+             subset(sample.plots, Veg_Class=="Decidious (Sparse)")%>%.[,3]%>%mean())/2
+og.cont<-subset(sample.plots, Veg_Class=="Mixed Native (Contin.)")%>%.[,3]%>%mean()
+og.diff<-subset(sample.plots, Veg_Class=="Mixed Native (Diffuse)")%>%.[,3]%>%mean()
+og.spar<-subset(sample.plots, Veg_Class=="Mixed Native (Sparse)")%>%.[,3]%>%mean()
+
+# assign pine values
+pine.cont<-pine[pine$Veg_Class == "Pine (Contin.)", "Community_Flam"] 
+pine.diff<-pine[pine$Veg_Class == "Pine (Diffuse)", "Community_Flam"] 
+pine.spar<-pine[pine$Veg_Class == "Pine (Sparse)", "Community_Flam"] 
+# also need to get the estimated community flammability for pasture. if using a generic low value, comment out
+# pastureflam<-pasture$Community_Flam
+
+# generic low value for pasture - needs to be lower than the minimum value so that all woody veg is more likely to 
+# burn. If using the community flammability estimate instead, comment this out. 
+pastureflam<-min(sample.plots$Community_Flam)/2
+
+# also need a value for non veg - no flammability, but needs max resistance in next step. Have doubled the minimum
+# value - needs to be distinctly different but still on same sort of scale. Doesn't matter actual value as will be 
+# constant between the different scenarios.
+nonveg<-min(sample.plots$Community_Flam)/4
+```
+
+This section determines the threshold for choosing what is a node of high flammability
+```{r k means clustering}
+# Get data into format that will be used in resistance surface - inverted 
+km.dat<-max(sample.plots$Community_Flam)-sample.plots$Community_Flam # invert so it's resistance not flammability
+hist(km.dat, breaks=20) # use histogram to decide on sensible number of clusters - 5 - v low, low, med, high, v high
+
+# run k-means clustering wtih 5 classes
+set.seed(20)
+flamCluster <- kmeans(km.dat, 5, nstart = 20)
+flamCluster
+
+# plot outputs
+sample.plots$cluster <- as.factor(flamCluster$cluster)
+kmplot<-ggplot(sample.plots, aes(Veg_Class, km.dat, color = cluster)) + geom_point(size=3)+
+  ylab("Plot Community Flammability")+
+  scale_color_brewer(palette="Set1")+
+  xlab("")+theme_bw()+theme(axis.text.x = element_text(angle=90))
+#ggsave(kmplot, file="../results/kmeans_clusters.png", width=8, height=5)
+
+# define resistance threshold below which patches should be "nodes" of high flammability 
+# using k-means clustering - want all flam values in high or v high classes
+# find cluster number of second-lowest mean ("high" class, remember they're inverted to correspond to resistance)
+cluster.no<-which(flamCluster$centers==sort(flamCluster$centers)[2])
+# set threshold as minimum resistance value (inverted flammability) that corresponds to that cluster
+threshold<-subset(sample.plots, cluster==cluster.no)%>%.[,3]%>%min(.)
+threshold<-max(sample.plots$Community_Flam)-threshold
+```
+
+```{r set params}
+# specify how many bootstraps per scenario you want - recommend max 100
+n<-100
+# specify what proportion of the landscape you want to replant - set at 10% (0.1)
+proportion.replant<-0.1
+```
+Each chunk takes approx 1 hour to run
+```{r baseline scenario}
+# set the input model data as the raw polygons data frame (not important here but important for next runs)
+polygons<-polygons.raw
+scenario<-"baseline"
+source("landscape_model.R")
+```
+
+```{r pine scenario}
+#reset polygons (removing the previous run data as has been saved already)
+polygons<-polygons.raw
+scenario<-"pine"
+source("landscape_model.R")
+```
+
+```{r kanuka scenario}
+polygons<-polygons.raw
+scenario<-"kanuka"
+source("landscape_model.R")
+```
+
+```{r native scenario}
+polygons<-polygons.raw
+scenario<-"native"
+source("landscape_model.R")
+```

@@ -1,0 +1,98 @@
+---
+title: "Flammability Graphics"
+author: "Jennifer Pannell"
+date: "27/09/2019"
+output: html_document
+---
+
+```{r read in data etc}
+rm(list=ls())
+library(tidyverse)
+library(gridExtra)
+
+bl<-read.csv("../ls_model_outputs/network_statistics_baseline.csv", header=T)
+pine<-read.csv("../ls_model_outputs/network_statistics_pine.csv", header=T)
+kan<-read.csv("../ls_model_outputs/network_statistics_kanuka.csv", header=T)
+nat<-read.csv("../ls_model_outputs/network_statistics_native.csv", header=T)
+
+# make new model column
+bl$model<-"baseline"
+pine$model<-"pine"
+kan$model<-"kanuka"
+nat$model<-"native"
+
+# combine to one data frame
+dat<-rbind(bl,pine,kan,nat)
+```
+
+```{r box plots}
+
+for (i in 2:ncol(dat)){
+  var<-colnames(dat[i])
+  a<-ggplot(dat, aes(model,dat[,i]))+
+    geom_boxplot()+
+    ylab(var)
+  file.path<-paste("../results/boxplot_",var,".png", sep="")
+  ggsave(a, file=file.path, width=8, height=6)
+}
+
+# make shortlist of ones to do nicely:
+# x_path_wt & x_patch area
+# clustering
+# x degree
+# n links & nodes
+# mean distance 
+
+a<-ggplot(dat, aes(model,x_path_wt))+
+    geom_boxplot()+
+    ylab("Mean Path Weight")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+b<-ggplot(dat, aes(model,x_patch_area))+
+    geom_boxplot()+
+    ylab("Mean Patch Area")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+c<-ggplot(dat, aes(model,meandistance))+
+    geom_boxplot()+
+    ylab("Mean Distance of Random Nodes")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+d<-ggplot(dat, aes(model,x_degree))+
+    geom_boxplot()+
+    ylab("Mean Degree")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+e<-ggplot(dat, aes(model,skew_degree))+
+    geom_boxplot()+
+    ylab("Skew of Degree Distribution")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+f<-ggplot(dat, aes(model,clustering))+
+    geom_boxplot()+
+    ylab("Network Clustering Coefficient")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+g<-ggplot(dat, aes(model,n_nodes))+
+    geom_boxplot()+
+    ylab("Number of Nodes")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+h<-ggplot(dat, aes(model,n_links))+
+    geom_boxplot()+
+    ylab("Number of Links")+
+    xlab("Replanting Scenario")+
+    theme_light()
+
+
+plot<-arrangeGrob(a,b,c,d,e,f,g,h, ncol=2, nrow=4)
+ggsave(plot,file="../results/multiplot.png", height=24, width=16, units=c("cm"))
+
+```

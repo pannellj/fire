@@ -1,7 +1,7 @@
 ---
-title: "Community Weighted Means - Flammability"
+title: "Community Flammability Graham"
 author: "Jennifer Pannell"
-date: "7 June 2019"
+date: "13/09/2019"
 output: html_document
 ---
 
@@ -10,14 +10,19 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list=ls())
 library(tidyverse)
 library(reshape2)
+library(ggbiplot)
+library(FD)
+library(gridExtra)
 ```
 #Intro
 This R markdown will calculate individual species flammability values, and then merge that with the community cover abundance data.
-The output will be a flammability score for each vegetation class.
-Things to investigate:
-*Do we calculate flammability for the average community within veg type, or the flammability for each plot then average by veg type? Update 01/07/19 - per plot, then average flam per veg type 
-*Perhaps the best thing to do is both, see how it compares. Update 01/07/19 - try above first
-*Should we just do this for the PC flammability scores, or also the raw flammability traits? Start with PC.
+It takes as input the following files:
+burndat.csv (cleaned burn data from amalgamated from files sent by Tim Curran & team)
+Plot_IV.csv (plot level species Importance Values - output of cover_summaries.Rmd)
+CurrentNVSNames.csv (NVS codes and associated species names downloaded from Landcare)
+traits_all.csv (cleaned plant trait data collated by Jen from Ecotraits and other online sources e.g. NZ Flora)
+
+Output is community_flam.csv - plot-level community flammability scores with associated vegetation type, to feed into landscape.Rmd
 
 ##Notes on data cleaning pre-reading into R
 *I amalgamated all data from Tim's group - different spreadsheets
@@ -29,15 +34,17 @@ Things to investigate:
 
 # Read in data
 ```{r read species burn data, echo=T, results='hide'}
-burn<-read.csv("burndat.csv", header=T, stringsAsFactors = F)
+burn<-read.csv("../data/burndat.csv", header=T, stringsAsFactors = F)
 # Make sure NVS code is all caps
-burn$NVSCode<-toupper(burn$NVSCode)
-# Strip white space
-burn$NVSCode<-tm::stripWhitespace(burn$NVSCode)
+# Strip white space (also from Species Name)
+burn$NVSCode<-burn$NVSCode%>%toupper()%>%tm::stripWhitespace()%>%trimws(.,"both")
+burn$SpeciesName<-burn$SpeciesName%>%tm::stripWhitespace()%>%trimws(.,"both")
+# make sure data is write structure
+burn$IgnitionTime<-as.numeric(burn$IgnitionTime)
 ```
 
-# Fix missing ignition times
-```{r deal with missing ignition time data, echo=T, results='hide'}
+Fix missing ignition times
+```{r deal with missing ignition time data}
 # assume it can be predicted by other 3 vars as they are all quite correlated
 # use negative binomial to account for the overdispersion and disallow negative values
 mod<-MASS::glm.nb(as.integer(IgnitionTime)~BurnBiomass+MaxTemp+BurnTime, data=burn)
@@ -53,14 +60,15 @@ for(i in 1:nrow(burn)){
 burn$Ignitability<-max(burn$IgnitionTime)-burn$IgnitionTime
 
 rm(mod, i)
-
 ```
 
 # Create community matrix
-```{r read in community data, echo=T, results='hide'}
-community<-read.csv2("Plot_IV.csv", header=T, sep=",",  stringsAsFactors = F)
-community$SpeciesName<-toupper(community$SpeciesName)
-community$SpeciesName<-tm::stripWhitespace(community$SpeciesName)
+# Just using canterbury farm at the mo as it's the only farm with a landscape
+# But keeping rest of the analysis (pca etc) the same as community.Rmd - based on data from all 3 farms. 
+```{r read in community data}
+community<-read.csv2("../data/Plot_IV.csv", header=T, sep=",",  stringsAsFactors = F)
+community$SpeciesName<-community$SpeciesName%>%toupper()%>%tm::stripWhitespace()%>%trimws(.,"both")
+community$PlotID<-community$PlotID%>%toupper()%>%tm::stripWhitespace()%>%trimws(.,"both")
 names(community)[2]<-"NVSCode" #rename this to be consistent with burn
 community$IV<-as.numeric(community$IV)
 
@@ -68,10 +76,11 @@ community$IV<-as.numeric(community$IV)
 cmat<-dcast(community, formula=PlotID~NVSCode, value.var = "IV", sum)
 
 # add full latin name to community dataframe
-nvs<-read.csv("CurrentNVSNames.csv", header=T, sep=",", stringsAsFactors = F)
-nvs$NVSCode<-toupper(nvs$NVSCode)
+nvs<-read.csv("../data/CurrentNVSNames.csv", header=T, sep=",", stringsAsFactors = F)
+nvs$NVSCode<-nvs$NVSCode%>%toupper()%>%tm::stripWhitespace()%>%trimws(.,"both")
 community<-merge(community, nvs[,c(1,13)], by="NVSCode")
-names(community)[14]<-"SpeciesName"
+names(community)[15]<-"SpeciesName"
+community$SpeciesName<-community$SpeciesName%>%tm::stripWhitespace()%>%trimws(.,"both")
 ```
 
 # Identify species with no flammability data and assign them mean value for genus or closest in terms of traits
@@ -111,92 +120,352 @@ for (i in 1:nrow(newdat)){
   rm(a, genusmeans)
 }
 
-
 burn<-rbind(burn, newdat)
 
 rm(newdat,i,BurnBiomass, BurnTime, Ignitability, IgnitionTime, MaxTemp, NVSCode, Sample, SpeciesName, flamgen)
 
 ```
 
+```{r other missing species based on expert opinion}
+## following discussions with Tim Curran, he thinks best parallel for nikau palm (which has no congeners in burn dataset, nor similar species trait-wise) would be either cabbage tree or tree ferns. Suggestion is to run with both and see what difference it makes to overall result, then choose one. 
+
+# note that this does not apply in canterbury as there is no nikau in canterbury. 
+
+# 1. assign nikau palm value for cabbage tree
+  cabbage<-burn[burn$NVSCode=="CORAUS",]%>%
+    summarise_at(c("IgnitionTime", "MaxTemp", "BurnTime", "BurnBiomass", "Ignitability"), mean, na.rm=TRUE)%>%
+    cbind(NVSCode="RHOSAP",.)%>%
+    cbind(Sample="NA",.)%>%
+    cbind(SpeciesName="Rhopalostylis sapida",.)%>%
+    cbind(.,Genus="Rhopalostylis")
+ #  
+  burn<-rbind(burn, cabbage)
+  rm(cabbage)
+# # also update the community data to say we do have burn data for nikau 
+  community <- within(community, flamdata[NVSCode == "RHOSAP" & flamdata=="FALSE"] <- "TRUE")
+
+ # 2. Re-run this code and remove below comments, comment out 1 instead, run with mean of tree ferns instead - what's the difference in flammability values for the veg types?
+ 
+ #   treefern<-burn[burn$NVSCode=="DICSQU"|burn$NVSCode=="CYAMED"|burn$NVSCode=="CYADEA",]%>%
+ #     summarise_at(c("IgnitionTime", "MaxTemp", "BurnTime", "BurnBiomass", "Ignitability"), mean, na.rm=TRUE)%>%
+ #     cbind(NVSCode="RHOSAP",.)%>%
+ #     cbind(Sample="NA",.)%>%
+ #     cbind(SpeciesName="Rhopalostylis sapida",.)%>%
+ #     cbind(.,Genus="Rhopalostylis")
+ # #  
+ #   burn<-rbind(burn, treefern)
+ #   rm(treefern)
+ # #also update the community data to say we do have burn data for nikau 
+ #  community <- within(community, flamdata[NVSCode == "RHOSAP" & flamdata=="FALSE"] <- "TRUE")
+
+```
+
+```{r traits PCA}
+## read in trait data and merge with burn
+traits<-read.csv("../data/traits_all.csv", header=T, na.strings="", stringsAsFactors = F)
+names(traits)[1]<-"SpeciesName"
+traits$SpeciesName<-traits$SpeciesName%>%tm::stripWhitespace()%>%trimws(.,"both")
+
+## do some simplification of trait data - vegetative organs and leaf form
+for(i in 1:length(traits$Vegetative.Organs)){
+  if (traits$Vegetative.Organs[i]!="None"){
+    traits$Vegetative.Organs[i]<-"Yes"
+  }
+}
+
+# finds leaf forms containing words grass, needle leaved, e.g. "needle leaved -2  needles" and just simplify to grass # & needle. If not grass, needle or broad just call it "other"
+for(i in 1:length(traits$Leaf.Form)){
+  if(isTRUE(startsWith(traits$Leaf.Form[i], "Grass"))) {
+    traits$Leaf.Form[i]<-"Grass-leaved"
+  }else if(isTRUE(startsWith(traits$Leaf.Form[i], "Needle"))){
+    traits$Leaf.Form[i]<-"Needle-leaved"
+  }else if(isFALSE(startsWith(traits$Leaf.Form[i],"Broad"))){
+    traits$Leaf.Form[i]<-"Other"
+  }
+}
+
+# create dataset with all burn samples and trait data
+traits2<-merge(traits, burn, by="SpeciesName")
+
+# do some exploratory analyses
+# histograms show that nearly all the variables are extremely skewed, which is the reason the pca is so uninformative
+# plotted log histograms to see whether log-tranformation fixes this (it does)
+traits2$logheight<-log(traits2$Max.Mean.Height..m.+1)
+traits2$logleaflength<-log(traits2$Max.Mean.Leaf.Length..mm.+1)
+traits2$logleafwidth<-log(traits2$Leaf.Width..mm.+1)
+traits2$logleafarea<-log(traits2$LeafArea+1)
+traits2$logburntime<-log(traits2$BurnTime+1)
+traits2$logburnbio<-log(traits2$BurnBiomass+1)
+
+## do a pca with the burn & trait data
+## drop area bc it's highly cor'd with both width & length (which are not that cor'd)
+## get rid of non-numeric vars
+pca_dat1<-traits2[,c(24,27,29:31,33:34)]%>%aggregate(by=list(traits2$SpeciesName), FUN=mean, na.rm=T)
+names(pca_dat1)[1]<-"SpeciesName"
+pca_dat1<-merge(traits, pca_dat1, by="SpeciesName", all.x=F)
+colnames(pca_dat1)[21:27]<-c("Combustibility","Ignitability","Height", 
+                             "Leaf length", "Leaf width",
+                             "Sustainability", "Consumability")
+labs<-colnames(pca_dat1)[21:27]
+traits.pca <- prcomp(pca_dat1[,c(21:27)], scale = TRUE) # perform a principal components analysis
+summary(traits.pca)   # look at the variance explained
+ggscreeplot(traits.pca) # scree plot
+
+# plot pca biplot with groupings of diff categorical traits
+plot1<-ggbiplot(traits.pca, groups = pca_dat1$Raunkiaer.Life.Mode, ellipse = TRUE)
+# main plot for report
+source("jen_ggbiplot.R") # load custom ggbiplot function
+plot2<-jen.ggbiplot(traits.pca, groups = pca_dat1$Regeneration, ellipse = TRUE, obs.scale = 2, var.scale=1,
+                    labels.size = 5)
+# make the labels for the plots
+pca_dat1$Regeneration<-as.factor(pca_dat1$Regeneration)
+
+# other var plots
+plot3<-ggbiplot(traits.pca, groups = pca_dat1$Shade.Tolerance, ellipse = TRUE, obs.scale = 1.5, var.scale=1)
+plot4<-ggbiplot(traits.pca, groups = pca_dat1$Spines.or.Burrs, ellipse = TRUE)
+plot5<-ggbiplot(traits.pca, groups = pca_dat1$Vegetative.Organs, ellipse = TRUE)
+plot6<-ggbiplot(traits.pca, groups = pca_dat1$Leaf.Form, ellipse = TRUE)
+plot7<-ggbiplot(traits.pca, groups = pca_dat1$Leaf.Longevity, ellipse = TRUE)
+plot8<-ggbiplot(traits.pca, groups = pca_dat1$Origin, ellipse = TRUE)
+plot9<-ggbiplot(traits.pca, groups = pca_dat1$Native, ellipse = TRUE)
+plot10<-ggbiplot(traits.pca, groups = pca_dat1$Woody, ellipse = TRUE)
+plot11<-ggbiplot(traits.pca, groups = pca_dat1$Type, ellipse = TRUE)
+plot12<-ggbiplot(traits.pca, groups = pca_dat1$LeafType, ellipse = TRUE)
+plot13<-ggbiplot(traits.pca, groups = pca_dat1$LeafMargin, ellipse = TRUE)
+plot14<-ggbiplot(traits.pca, groups = pca_dat1$Simple, ellipse = TRUE)
+
+# saves the plots - commented out to avoid re-saving them - remove # if want to redo them
+
+#ggsave("../results/lifemode_pca.png", plot=plot1, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/regen_pca.png", plot=plot2, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/shade_pca.png", plot=plot3, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/spines_pca.png", plot=plot4, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/vegetative_pca.png", plot=plot5, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/leafform_pca.png", plot=plot6, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/leaflongevity_pca.png", plot=plot7, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/origin_pca.png", plot=plot8, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/native_pca.png", plot=plot9, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/woody_pca.png", plot=plot10, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/type_pca.png", plot=plot11, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/leaftype_pca.png", plot=plot12, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/leafmargin_pca.png", plot=plot13, width=8, height=8, units=c("in"),dpi=300 )
+#ggsave("../results/simple_pca.png", plot=plot14, width=8, height=8, units=c("in"),dpi=300 )
+
+rm(plot1, plot3, plot4, plot5, plot6, plot7, plot8, plot9, plot10, plot11, plot12, plot13, plot14)
+
+```
+
+```{r use traits to estimate missing burn data}
+# get all species from community data that still have no burn data or matching genus
+SpeciesName<- subset(community, flamdata==FALSE&genusflam==FALSE)%>%.[,15]%>%unique()
+# build glms based on contin vars and add each factor at a time. 
+# based on pca plots and which ones have sensible ecological reasons plus not too many levels 
+
+# burnt biomass should be a logistic regression as is % data - do this on the raw data
+summary(bb.mod<-glm(cbind(round(BurnBiomass),round(100-BurnBiomass))~
+                      logheight+logleaflength+logleafwidth+Regeneration+
+                      Shade.Tolerance+Leaf.Form+Leaf.Longevity+Native+Type+Woody+Simple,
+                    data=traits2,family=binomial))
+
+# model diagnostics
+anova(bb.mod, test="LRT")
+plot(bb.mod)
+DescTools::PseudoR2(bb.mod)#0.19 mcfadden - that's not bad
+# predict for non burned spp
+# first need to do the log numeric vars for traits data frame too
+traits$logheight<-log(traits$Max.Mean.Height..m.+1)
+traits$logleaflength<-log(traits$Max.Mean.Leaf.Length..mm.+1)
+traits$logleafwidth<-log(traits$Leaf.Width..mm.+1)
+traits$logleafarea<-log(traits$LeafArea+1)
+
+# which ones were missing burn data? create data frame for prediction
+traits$missing<-traits$SpeciesName%in%SpeciesName
+missing_burn<-subset(traits, missing=="TRUE")
+
+missing_burn$BurnBiomass<-predict.glm(bb.mod, type="response", newdata=missing_burn)*100
+
+# now for burn time
+# model as negative binomial, again use the raw
+# but it's also very 0 inflated and ordinary nb are terrible. try zinb.
+# fitted with full vars as the biomass then dropped non significant - woody, native,regeneration,height
+summary(bt.mod<-pscl::zeroinfl(round(BurnTime)~
+                         logleaflength+logleafwidth+Shade.Tolerance+Leaf.Form+Leaf.Longevity+Type+Simple|
+                        logheight+logleafwidth+Shade.Tolerance+Leaf.Form+Leaf.Longevity+Type,
+                       data = traits2, dist = "negbin", EM = TRUE))
+# model diagnostics
+car::Anova(bt.mod)
+# get the predicted values so can do some diagnostic plots (not coded here)
+traits2$pred_bt<-predict(bt.mod, type="zero")*predict(bt.mod, type="response")
+# predict for the missing spp
+missing_burn$BurnTime<-predict(bt.mod, type="zero", newdata=missing_burn)*
+  predict(bt.mod, type="response", newdata=missing_burn)
+
+# now for ignitability
+# model same as burn biomass - max = 11, min = 0
+# dropped native as non sig
+summary(ig.mod<-glm(cbind(round(Ignitability), round(11-Ignitability))~
+                      logheight+logleaflength+logleafwidth+Regeneration+
+                      Shade.Tolerance+Leaf.Form+Leaf.Longevity+Type+Woody+Simple,
+                    data=traits2,family=binomial))
+# model diagnostics 
+anova(ig.mod, test="LRT")
+plot(ig.mod)
+DescTools::PseudoR2(ig.mod)#0.17 mcfadden - that's not bad
+
+missing_burn$Ignitability<-predict.glm(ig.mod, type="response", newdata=missing_burn)*11
+
+# finally, max temp
+# think this is the only normal one - only issue is that massive over representation of 150deg - about 800 samples
+# but i think it should still work in a normal glm?
+# simple and native not sig
+summary(mt.mod<-lm(MaxTemp~logheight+logleaflength+logleafwidth+Regeneration+Shade.Tolerance+
+                      Leaf.Form+Leaf.Longevity+Type+Woody, data=traits2))
+anova(mt.mod, test="LRT")
+plot(mt.mod)
+#0.22 r squared - pretty ok
+missing_burn$MaxTemp<-predict(mt.mod, type="response", newdata=missing_burn)
+
+# finally, add the missing_burn data to the burn data frame (need to merge it to get the nvs code and create the sample column etc)
+rm(bb.mod, bt.mod, ig.mod, mt.mod)
+missing_burn<-merge(missing_burn, nvs, by="SpeciesName", all.y=FALSE)
+missing_burn$Sample<-"NA"
+missing_burn$IgnitionTime<-"NA"
+missing_burn<-missing_burn[,c(1,43,30,44,29,27,26,28,33)]
+burn<-rbind(burn, missing_burn)
+#write.csv(missing_burn,"../results/predicted_burndat.csv", row.names = F)
+rm(missing_burn)
+
+```
+
 # Run PCA on flammability data, assign PC1 score to species as flammability score
 ```{r PCA on flammability}
 # create mean value per species so each species has just one pca score
-pca_dat<-burn[,c(5:8)]%>%aggregate(by=list(burn$NVSCode), FUN=mean, na.rm=T)
-names(pca_dat)[1]<-"NVSCode"
+burn$logburntime<-log(burn$BurnTime+1)
+burn$logburnbio<-log(burn$BurnBiomass+1)
+pca_dat2<-burn[,c(5,8,10,11)]%>%aggregate(by=list(burn$NVSCode), FUN=mean, na.rm=T)
+names(pca_dat2)<-c("NVSCode", "Combustibility", "Ignitability", "Sustainability", "Consumability")
 
-vars<-c("MaxTemp","BurnTime","BurnBiomass", "Ignitability")
-
-my.pca <- prcomp(pca_dat[,c(2:5)], scale = TRUE) # perform a principal components analysis
-summary(my.pca)   # look at the variance explained
-plot(my.pca)      # plot the eigenvalues
-biplot(my.pca)    # plot the site scores and the species vectors
+burn.pca <- prcomp(pca_dat2[,c(2:5)], scale = TRUE) # perform a principal components analysis
+summary(burn.pca)   # look at the variance explained
+plot(burn.pca)      # plot the eigenvalues
+biplot(burn.pca)    # plot the site scores and the species vectors
 
 # assign PC scores to species
-pca_dat$PC1 <- my.pca$x[,1] # extract the species scores and
-pca_dat$PC2 <- my.pca$x[,2] # add them to the species summary dataset
+pca_dat2$PC1 <- burn.pca$x[,1] # extract the species scores and
+pca_dat2$PC2 <- burn.pca$x[,2] # add them to the species summary dataset
 
-rm(my.pca, vars)
+# high PC1 = low flammability, invert so makes sense
+pc1.inv<-pca_dat2$PC1+abs(min(pca_dat2$PC1)) #rescale so min=0
+pc1.inv<-max(pc1.inv)-pc1.inv # invert
+pca_dat2$model.flam<-pc1.inv
 
+bbiplot<-autoplot(burn.pca, 	ellipse=F,loadings = TRUE, loadings.colour = 'black', loadings.label = TRUE, 
+                  loadings.label.size = 4, loading.label.color = 'black',loadings.label.repel=T) 
+
+
+bbiplot<-ggbiplot(burn.pca, obs.scale = 0.5, var.scale = 1)
+plot<-arrangeGrob(plot2, bbiplot, nrow=1, ncol=2, widths=c(8,4))
+
+ggsave(plot,file="../results/biplots.png", width=12, height=4, dpi=300)
+rm(plot2, plot, bbiplot)
 ```
 
 # Multiply community matrices by flammability score vector to get cwm of flammability
 ```{r community weighted flammability, echo=TRUE, results="hide"}
 # remove all from species summary data that aren't in community
-pca_dat<-pca_dat %>% semi_join(community, by = "NVSCode")
-
-# temporary, until can find out what to do about species that are completely missing i.e.  no genus
-NVSCode<-unique(community$NVSCode)
-SpeciesName<-unique(community$SpeciesName)
-tempdat<-data.frame(NVSCode, SpeciesName)
-tempdat<-merge(pca_dat, tempdat, by="NVSCode", all.y=TRUE)
-rm(NVSCode, SpeciesName)
-#assign ones with no flammability score something far below the min flam score so easily ID - minus 5
-tempdat$PC1[is.na(tempdat$PC1)] <- -5
+pca_dat3<-pca_dat2 %>% semi_join(community, by = "NVSCode")
+#write.csv(pca_dat3, file="../results/final_species_flams.csv", row.names=F)
 
 # make col 1 of community matrix into rownames so can multiply, create vector of flam traits (pc1)
 rownames(cmat) <- cmat[,1]
 cmat<-cmat[,c(2:ncol(cmat))]
-pc1<-tempdat$PC1
 
-# multiply the IV values in community matrix by their corresponding species pc1 score
-com1<-sweep(cmat, MARGIN=2, pc1, `*`)
+traits<-as.data.frame(pca_dat3[,8])
+names(traits)<-c("model.flam")
+rownames(traits) <- pca_dat3[,1]
 
-# calculate the sum of species IV in each site
-av_com <- rowSums(cmat, na.rm=F, dims=1)
+cwm_fd<-dbFD(traits,cmat)
 
-#Then, we do the same with trait values:
-av_com1 <- rowSums(com1, na.rm=F, dims=1)
+aCWM<-cwm_fd$CWM
 
-#Finally, we divide the two previous matrix:
-aCWM <-data.frame(av_com1/av_com)%>%
+# reformatting on the cwm data frame
+aCWM <-aCWM%>%
   tibble::rownames_to_column("PlotID")%>%
-  rename(Community_Flam = av_com1.av_com )
+  dplyr::rename(Community_Flam = model.flam )
+
 # add the veg data
 aCWM<-community %>%
-    select(PlotID, VegClass) %>%
+    dplyr::select(PlotID, GrahamClass) %>%
     distinct() %>%
     right_join(aCWM, by = 'PlotID')
 
 aCWM$Farm<-stringr::word(aCWM$PlotID, 1)
-# write data to csv
-write.csv(aCWM, file="temp_community_flam.csv", row.names = F)
-rm(av_com, av_com1, pc1, com1, cmat)
+
+aCWM<-subset(aCWM, Farm=="CAN") #select just canterbury as that's all we have the landscape for right now
+# write data to csv - commented out to avoid overwriting
+#write.csv(aCWM, file="../ls_model_inputs/community_flam.csv", row.names = F)
+
 ```
 
-# Does flammability vary between veg types on farms?
+# Plot flammability by veg types on farms, export data for landscape analysis
 ```{r flammability plots by veg type}
-a<-ggplot(aCWM, aes(VegClass, Community_Flam))+
+a<-ggplot(aCWM, aes(GrahamClass, Community_Flam))+
   geom_boxplot()+
   theme(axis.text.x = element_text(angle=90))+
-  xlab("Rank by sum IV")+
+  xlab("")+
+  ylab("Community Flammability Score")+
   facet_grid(.~Farm, scales="free")
 a
 
+ggsave(a, file="../results/community_flammability_vegtypes_graham_treefern.png", width=10, height=6, dpi=300)
 ```
 
-Things still to fix as of 02.07.2019
+This section estimates flammability for pine (continuous, diffuse and sparse) as no pine plots sampled in canterbury, and needed for the flammability scenarios. Based on assumption of monoculture of pinus radiata.
+```{r pine flammability estimate}
+# read in pine data and format NVS code species name as in other data frames
+pine<-read.csv("../data/pine_IV.csv", header=T, stringsAsFactors = F)
+pine$NVSCode<-pine$NVSCode%>%toupper()%>%tm::stripWhitespace()%>%trimws(.,"both")
+pine$SpeciesName<-pine$SpeciesName%>%tm::stripWhitespace()%>%trimws(.,"both")
 
-1. 30 species no flam data - have emailed Tim & Azhar, awaiting response. Estimate from traits??
-2. Estimates currently biased bc they don't include pasture - how to incorporate? e.g. sparse forest might be more flammable bc of all the highly flammable pasture sp, but at the moment this isnt' accounted for and so contin comes up more flam bc it has more biomass. Adjust IV scores per plot by % cover as per original raw data from Stacey?
+# make into matrix
+temp.cmat2<-dcast(pine, formula=PlotID~NVSCode, value.var = "IV", sum)
+# make col 1 of community matrix into rownames so can multiply, create vector of flam traits (pc1b)
+cmat2<-as.matrix(temp.cmat2[,2])
+rownames(cmat2) <- temp.cmat2[,1]
+colnames(cmat2) <-"PINRAD"
+rm(temp.cmat2)
+
+temp.traits2<-as.data.frame(pca_dat2[,c(1,8)])
+temp.traits2<-subset(temp.traits2, startsWith(temp.traits2$NVSCode, "PIN")==TRUE)
+traits2<-as.data.frame(temp.traits2[,2])
+colnames(traits2)<-"model.flam"
+rownames(traits2) <- temp.traits2[,1]
+rm(temp.traits2)
 
 
+# need to do manually as won't work in FD with the dummy data
+# multiply the IV values in community matrix by the mean pc1 score for pines
+com2<-cmat2*mean(traits2$model.flam)
+
+# calculate the sum of species IV in each site
+av_com2 <- rowSums(cmat2, na.rm=F, dims=1)
+
+#Then, we do the same with trait values:
+av_com3 <- rowSums(com2, na.rm=F, dims=1)
+
+#Finally, we divide the two previous matrix:
+aCWM2 <-data.frame(av_com3/av_com2)%>%
+  tibble::rownames_to_column("PlotID")%>%
+  dplyr::rename(Community_Flam = av_com3.av_com2 )
+
+# add the veg data
+aCWM2<-pine %>%
+    dplyr::select(PlotID, Veg_Class) %>%
+    distinct() %>%
+    right_join(aCWM2, by = 'PlotID')
+
+# write data to csv - commented out to avoid overwriting
+#write.csv(aCWM2, file="../ls_model_inputs/pine_community_flam.csv", row.names = F)
+# tidy up
+rm( pine, cmat2, com2, av_com3, av_com2)
+```

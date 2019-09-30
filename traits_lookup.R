@@ -7,32 +7,31 @@ library(rvest)
 library(stringr)
 library(RSelenium)
 
-## open the remote driver session
-rsDr<-rsDriver(port=4444L, browser="firefox")
-remDr <- rsDr$client
+## read in species list, cross-ref NVS names against farm data species codes & get preferred sci name
+dat<-read.table("../data/all_sp_list.txt", header=T, sep="\t", stringsAsFactors = F)
+
 # create an empty matrix to store trait data in
 trait.dat<-matrix(nrow=0, ncol=17)
-colnames(trait.dat)<-c("Taxon", "Raunkiaer Life Mode", "Esler Life Mode", "Regeneration", 
+colnames(trait.dat)<-c("SpeciesName", "Raunkiaer Life Mode", "Esler Life Mode", "Regeneration", 
                        "Shade Tolerance", "Max Mean Height (m)", "Mean Height (m)", 
                        "Mean Plant Lifespan (years)", "Number of Shoot", "Spines or Burrs", 
                        "Vegetative Organs", "Leaf", "Leaf Form", "Max Mean Leaf Length (mm)", 
                        "Leaf Width (mm)", "Mean Leaf Lifespan (months)", "Leaf Longevity")
 
-## cross-ref NVS names against farm data species codes & get preferred sci name
-nvs<-read.csv("CurrentNVSNames.csv", header=T, stringsAsFactors = F)
-dat<-read.table("all_sp_list.txt", header=T, sep=",")
-dat2<-merge(dat, nvs, by="NVSCode", all.x = T)
-rm(nvs, dat)
 ## this is the input data for the search function
-taxon.list<-subset(dat2, SpeciesName!="NA")
+taxon.list<-subset(dat, SpeciesName!="NA")
 ## create an empty list for storing failed searches
 fail.list<-list()
+
+## open the remote driver session
+rsDr<-rsDriver(port=4444L, browser="firefox")
+remDr <- rsDr$client
 
 ## this function searches the ecotraits database for the species name as given in the "preferred name" column (13 in this dataset)
 for (i in 1:nrow(taxon.list)) {
   remDr$navigate("https://ecotraits.landcareresearch.co.nz/SearchForm.aspx")
   
-  taxon<-taxon.list[i,13]
+  taxon<-taxon.list[i,1]
   
   species<- remDr$findElement(using = 'name', "SearchText")
   species$sendKeysToElement(list(taxon))
@@ -66,13 +65,15 @@ for (i in 1:nrow(taxon.list)) {
         str_trim()
       even_indexes<-seq(2,length(trait.table),2)
       odd_indexes<-seq(1,length(trait.table),2)
-      trait<-trait.table[odd_indexes]
-      value<-trait.table[even_indexes]
+      trait<-trait.table[odd_indexes]%>%append("Taxon",.)
+      value<-trait.table[even_indexes]%>%append(taxon,.)
       
-      dat<-data.frame(trait, value)%>% apply(2, function(x) gsub("^$|^ $", NA, x))%>%.[rowSums(is.na(.)) != ncol(.),]%>%
-        t()%>%.[2,]%>%append(taxon,.)
-      
-      trait.dat<-data.frame(rbind(trait.dat, dat))
+      dat<-data.frame(trait, value)%>% apply(2, function(x) gsub("^$|^ $", NA, x))%>%.[rowSums(is.na(.)) != ncol(.),]
+      trait<-dat[,1]
+      dat<-dat%>%.[,2]%>%t()%>%as.data.frame()
+      colnames(dat)<-trait
+      dat<-dat[,(is.na(names(dat))==FALSE)]
+      trait.dat<-rbind(trait.dat, dat)
       print(paste("Species trait data added to data frame:", taxon))
     }else{
       print (paste("No morphological trait data found for species:", taxon))
@@ -83,5 +84,5 @@ for (i in 1:nrow(taxon.list)) {
 }
 
 # write results data to file
-write.csv(trait.dat, file="traits_raw.csv", row.names = F)
-write.csv(fail.list, file="failed_searches.csv", row.names=F)
+write.csv(trait.dat, file="../data/traits_raw.csv", row.names = F)
+write.csv(fail.list, file="../data/failed_searches.csv", row.names=F)

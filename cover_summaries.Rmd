@@ -1,7 +1,7 @@
 ---
-title: "updated_veg_analysis"
+title: "Cover Summaries Canterbury (Graham Veg Classes)"
 author: "Jennifer Pannell"
-date: "15 May 2019"
+date: "13/09/2019"
 output: html_document
 ---
 
@@ -13,12 +13,15 @@ library(plyr)
 ```
 
 ## Read data, remove NA values
-
+## Subset to just canterbury (only farm with a landscape currently)
 ```{r veg data}
-dat<-read.csv("cover_class_data_long_all.csv", header=T)
+dat<-read.csv("../data/cover_class_data_long_all.csv", header=T)
 # turn NA to 0
 dat[is.na(dat)]<-0
 dat<-na.omit(dat)
+
+# subset to canterbury
+dat<-subset(dat, Farm=="CAN")
 
 # strip white space from species names & plot IDs
 dat$SpeciesName<-trimws(dat$SpeciesName)
@@ -26,7 +29,7 @@ dat$PlotNo<-trimws(dat$PlotNo)
 dat$PlotID<-trimws(dat$PlotID)
 
 # read in plot data & merge
-plots<-read.csv("plot_info.csv", header=T)
+plots<-read.csv("../data/plot_info.csv", header=T)
 plots$PlotNo<-trimws(plots$PlotNo)
 plots$PlotID<-trimws(plots$PlotID)
 dat<-merge(plots, dat[,c(3:6)], by="PlotID")
@@ -66,52 +69,52 @@ dat<-merge(dat,values2, by="value")
 dat$IV<-dat$midpoint*dat$height
 
 # make into a summary table - one row per species per plot
-summary.plot<-dat[,18]%>%aggregate(by=list(dat$PlotID, dat$SpeciesName), FUN=sum, na.rm=T)
+summary.plot<-dat[,19]%>%aggregate(by=list(dat$PlotID, dat$SpeciesName), FUN=sum, na.rm=T)
 names(summary.plot)<-c("PlotID", "SpeciesName", "IV")
 
 summary.plot<-merge(summary.plot,plots,by="PlotID")
 
-write.csv(summary.plot, file="plot_IV.csv", row.names = F)
+write.csv(summary.plot, file="../data/plot_IV.csv", row.names = F)
 
 ```
 
 # Summarize by farm & vegetation class, and by species, calcluating mean and SD and total IV. 
 ```{r veg class summaries}
 # make into a summary table - one row per species per farm
-summary.vegclass<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$VegClass, summary.plot$SpeciesName), FUN=mean, na.rm=T)
-names(summary.vegclass)<-c("Farm","VegClass", "SpeciesName", "MeanIV")
-summary.vegclass$SDIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
-summary.vegclass$SumIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$VegClass, summary.plot$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
-summary.vegclass<-summary.plot%>%count(vars=c("Farm", "VegClass", "SpeciesName"))%>%merge(.,summary.vegclass, by=c("Farm","VegClass", "SpeciesName"))
+summary.vegclass<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$GrahamClass, summary.plot$SpeciesName), FUN=mean, na.rm=T)
+names(summary.vegclass)<-c("Farm","GrahamClass", "SpeciesName", "MeanIV")
+summary.vegclass$SDIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$GrahamClass, summary.plot$SpeciesName), FUN=sd, na.rm=T)%>%.[,4]
+summary.vegclass$SumIV<-summary.plot[,3]%>%aggregate(by=list(summary.plot$Farm, summary.plot$GrahamClass, summary.plot$SpeciesName), FUN=sum, na.rm=T)%>%.[,4]
+summary.vegclass<-summary.plot%>%count(vars=c("Farm", "GrahamClass", "SpeciesName"))%>%merge(.,summary.vegclass, by=c("Farm","GrahamClass", "SpeciesName"))
 
 ```
 
 #Species lookup
 Now merge with the NVS table to give us the scientific names of each species code
 ```{r merge scientific name from NVS}
-names<-read.csv("CurrentNVSNames.csv", header=T)
+names<-read.csv("../data/CurrentNVSNames.csv", header=T)
 summary.vegclass$SpeciesName<-toupper(summary.vegclass$SpeciesName)
 names(summary.vegclass)[3]<-"NVSCode"
 names$NVSCode<-toupper(names$NVSCode)
 
 summary.vegclass<-merge(summary.vegclass, names[,c(1,3,5,6)], by="NVSCode", all.x=TRUE)
-summary.vegclass<-summary.vegclass[order(summary.vegclass$Farm, summary.vegclass$VegClass, -summary.vegclass$SumIV),]
+summary.vegclass<-summary.vegclass[order(summary.vegclass$Farm, summary.vegclass$GrahamClass, -summary.vegclass$SumIV),]
 ```
 
 #Burn data
 How many of theses species do we have flammability data for?
 ```{r merge burn data}
-burn<-read.table("burn_list.txt", header=T, sep="\t")
-congen<-read.table("congener_list.txt", header=T, sep="\t")
+burn<-read.table("../data/burn_list.txt", header=T, sep="\t")
+congen<-read.table("../data/congener_list.txt", header=T, sep="\t")
 
-summary.vegclass$burned<-summary.vegclass$NVSCode%in%burn$NVSName
-summary.vegclass$congener<-summary.vegclass$NVSCode%in%congen$NVSName
+summary.vegclass$burned<-summary.vegclass$NVSCode%in%burn$NVSCode
+summary.vegclass$congener<-summary.vegclass$NVSCode%in%congen$NVSCode
 
 ```
 
 
 ```{r write file}
-write.csv(summary.vegclass, file="farm_summaries.csv", row.names = F)
+write.csv(summary.vegclass, file="../data/farm_summaries.csv", row.names = F)
 
 ```
 
