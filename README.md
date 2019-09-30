@@ -2,7 +2,7 @@
 ## Flammability and vegetation models for NSC BioHeritage Project Farming and Nature Conservation   
 30.09.2019
 
-This repository contains all of the R code necessary for running the community flammbility models as they stand at September 2019. 
+This repository contains all of the R code necessary for running the community flammbility models as they stand at September 2019. \n
 Please note that these models are still under development and that current outputs should be treated with some caution.
 
 Analyis and modelling should take place in the following order:
